@@ -1,6 +1,6 @@
 {
   "name": "project",
-  "homepage": "https://sholingovender269_ux.github.io/<Blue_Chip_Trading>/",
+  "homepage": "https://sholingovender269-ux.github.io/Blue_Chip_Trading",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -8,7 +8,9 @@
     "dev": "vite --host",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "react": "^19.2.4",

@@ -120,7 +120,7 @@ export default function Academy() {
           <p className="hero-note">No credit card required · Cancel anytime</p>
         </div>
         <div className="hero-right">
-          <img src="/2.jpg" alt="Trading platform" className="hero-image" />
+          <img src="2.jpg" alt="Example" className="hero-image" />
         </div>
       </section>
 

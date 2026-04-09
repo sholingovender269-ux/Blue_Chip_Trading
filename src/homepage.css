@@ -24,12 +24,10 @@ body {
   overflow-x: hidden;
 }
 
-/* HEADINGS use Space Grotesk */
 h1, h2, h3, .logo, .stat-val, .step-num {
   font-family: 'Space Grotesk', sans-serif;
 }
 
-/* LAYOUT */
 .page {
   max-width: 1280px;
   margin: 0 auto;
@@ -44,7 +42,6 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   text-align: center;
 }
 
-/* EYEBROW (small label above headings) */
 .eyebrow {
   display: block;
   font-size: 0.7rem;
@@ -55,7 +52,6 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   margin-bottom: 0.75rem;
 }
 
-/* SECTION HEADING */
 .h2 {
   font-size: 2.75rem;
   font-weight: 800;
@@ -195,7 +191,6 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   border: 1px solid var(--border);
 }
 
-/* Pulsing dot before badge */
 .hero-badge::before {
   content: "●";
   color: var(--green);
@@ -237,13 +232,22 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   flex: 1;
   display: flex;
   justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  max-height: 600px;
+  border-radius: 16px;
 }
 
 .hero-image {
   width: 100%;
+  height: 100%;
   max-width: 500px;
+  max-height: 600px;
   border-radius: 16px;
   border: 1px solid var(--border);
+  object-fit: cover;
+  object-position: center;
+  display: block;
   transition: transform 0.3s;
 }
 
@@ -633,6 +637,7 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   .nav-links { order: 3; width: 100%; justify-content: center; gap: 1.25rem; }
   .nav-right { order: 2; }
   .hero { flex-direction: column; text-align: center; padding: 3rem 0; min-height: unset; }
+  .hero-right { max-height: 400px; }
   .hero-p { margin: 0 auto 1.25rem; }
   .hero-h1 { font-size: 2.5rem; }
   .stats-row { flex-direction: column; }
@@ -646,4 +651,5 @@ h1, h2, h3, .logo, .stat-val, .step-num {
   .h2 { font-size: 1.75rem; }
   .stat-val { font-size: 2rem; }
   .nav-right { flex-wrap: wrap; justify-content: center; }
+  .hero-right { max-height: 280px; }
 }
