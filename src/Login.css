@@ -1,0 +1,408 @@
+/* login.css - The Kinetic Reimagining */
+
+/* -----------------------------------------------------------
+   1. The Main Page - Cinematic Depth & Dynamic Aura
+   We remove the flat black background and replace it with a deep,
+   gradient-shifted aura centered on the login card. This focus
+    light prevents the screen from feeling dead.
+   ----------------------------------------------------------- */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-dark);
+    /* Deep gradient creates a central spotlight focus */
+    background-image:
+        radial-gradient(circle at center, #111e1b 0%, #080d0c 50%, var(--bg-dark) 100%);
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle data-grid background texture for kinetic context */
+.login-page::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    background-position: center;
+    opacity: 0.03; /* Extremely subtle */
+    pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   2. The Card - Floating & Kinetic
+   Here we implement the 'boring' fix. We add a sharp kinetic glow
+   effect on hover and make the card float with refined perspective.
+   The inner glow adds data-stream energy.
+   ----------------------------------------------------------- */
+.login-card {
+    background: #0d1210; /* Deeper than card bg for contrast */
+    width: 100%;
+    max-width: 480px;
+    padding: 60px 45px 50px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* KINETIC AURA: The refined outer border glow on hover */
+.login-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    border-color: rgba(0, 201, 167, 0.3);
+    box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.7),
+        0 0 30px rgba(0, 201, 167, 0.15); /* Kinetic glow */
+}
+
+/* The Subtle Inner Kinetic Stream glow (always present) */
+.login-card::after {
+    content: "";
+    position: absolute;
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 201, 167, 0.05); /* Inner data wire */
+    pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   3. Typography & Header - Refined Logic
+   We change the flow from centered and weak to centered and strong.
+   The title gets proper weighting, and we use kinetic casing.
+   ----------------------------------------------------------- */
+.login-header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+/* The Kinetic Logo style */
+.login-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.login-logo span {
+    color: var(--primary);
+    font-weight: 800;
+}
+
+/* The Kinetic Badge pill with glow */
+.login-badge {
+    display: inline-block;
+    background: rgba(0, 201, 167, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(0, 201, 167, 0.2);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 10px rgba(0, 201, 167, 0.1);
+}
+
+.login-header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 10px;
+}
+
+.login-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+/* -----------------------------------------------------------
+   4. Form & Inputs - Deep Glass & Focus Flow
+   Inputs were the weakest part of the design. Now they are deep,
+   frosted glass with clear, professional focus kinetic glows.
+   ----------------------------------------------------------- */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    position: relative;
+    z-index: 2;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    padding-left: 2px;
+}
+
+.input-group input {
+    background: rgba(255, 255, 255, 0.02); /* DEEP GLASS */
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--border);
+    padding: 16px;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-group input:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(148, 168, 161, 0.4); /* subtle text-gray border */
+}
+
+/* KINETIC FOCUS: The input lights up the data stream */
+.input-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(0, 201, 167, 0.03);
+    box-shadow: 0 0 15px rgba(0, 201, 167, 0.1);
+}
+
+/* -----------------------------------------------------------
+   5. Options - Unified Alignment
+   Moves the checkboxes and forgot password into a logical row.
+   ----------------------------------------------------------- */
+.login-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* The kinetic checkbox itself */
+.checkbox input {
+    accent-color: var(--primary);
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+}
+
+.forgot-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.forgot-link:hover {
+    color: var(--primary);
+}
+
+/* -----------------------------------------------------------
+   6. Kinetic Button - Dynamic Activation
+   The main CTA gets a solid glow background, refined kinetic padding,
+   and a dynamic active state that feels responsive.
+   ----------------------------------------------------------- */
+.login-btn {
+    background: var(--primary);
+    color: #000;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 800;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    margin-top: 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Active State: The visual "pop" of activation */
+.login-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 201, 167, 0.3);
+}
+
+.login-btn:active {
+    transform: translateY(-1px) scale(0.99);
+    box-shadow: 0 5px 15px rgba(0, 201, 167, 0.2);
+}
+
+/* Add a kinetic 'sweep' light on hover */
+.login-btn::before {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s;
+}
+
+.login-btn:hover::before {
+    left: 100%;
+}
+
+.error-message {
+    color: #ff5e5e;
+    background: rgba(255, 94, 94, 0.08);
+    border: 1px solid rgba(255, 94, 94, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* -----------------------------------------------------------
+   7. Footer - Modern Secondary Actions
+   We refine the "boring" signup text link and convert the
+   Back button into a subtle kinetic action that matches the brand.
+   ----------------------------------------------------------- */
+.login-footer {
+    text-align: center;
+    margin-top: 40px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+}
+
+.login-footer .signup-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.95rem;
+    transition: color 0.3s;
+}
+
+.login-footer .signup-link:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+/* Kinetic Separator data-wire */
+.login-footer hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.1;
+    margin: 30px 0 25px;
+}
+
+/* -----------------------------------------------------------
+   8. Kinetic Back Button - Clean Flow
+   Replacing the weak button style with a refined kinetic action
+   ----------------------------------------------------------- */
+.demo-btn {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    padding: 12px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    margin-top: 10px;
+    display: inline-block;
+}
+
+.demo-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* --- MOBILE RESPONSIVE TWEAKS --- */
+@media (max-width: 500px) {
+    .login-card {
+        padding: 50px 25px;
+        border-radius: 20px;
+    }
+
+    .login-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .login-options {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}
+/* -----------------------------------------------------------
+   9. Role Selector
+   ----------------------------------------------------------- */
+.role-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.role-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 12px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.role-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(0, 201, 167, 0.25);
+    color: #fff;
+}
+
+.role-btn.active {
+    background: rgba(0, 201, 167, 0.08);
+    border-color: rgba(0, 201, 167, 0.4);
+    color: var(--primary);
+    box-shadow: 0 0 12px rgba(0, 201, 167, 0.1);
+}
+
+.role-btn .role-icon {
+    font-size: 1.2rem;
+}

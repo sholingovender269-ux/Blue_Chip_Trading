@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import "./homepage.css";
 
 const WHY_US = [
-  { icon: "📊", title: "Advanced Charting Tools", desc: "Professional-grade charts with 50+ indicators, drawing tools, and multi-timeframe analysis." },
-  { icon: "📚", title: "Free Educational Resources", desc: "Structured courses, video tutorials, and written guides built for every skill level." },
+  { icon: "📊", title: "Advanced Charting ", desc: "Simulated trading environment powered by live forex charts, drawing tools, and multi-timeframe analysis." },
+  { icon: "📚", title: "Educational Resources", desc: "Structured courses, video tutorials, and written guides built for every skill level." },
   { icon: "📰", title: "Daily Market Analysis", desc: "Fresh breakdowns of what moved the market today and what to watch tomorrow." },
   { icon: "✅", title: "Regulated & Trusted", desc: "Fully compliant and transparent. Your funds and data are always protected." },
   { icon: "👥", title: "Live Mentorship", desc: "Watch real trades unfold in live sessions. Ask questions. Learn from real experience." },
@@ -16,30 +16,25 @@ const STEPS = [
   { n: "03", title: "Start Learning & Trading", desc: "Follow structured courses, join live sessions, practice on demo, and grow with the community." },
 ];
 
-const PLATFORM_FEATURES = [
-  { icon: "🛡", title: "Secure & Reliable", desc: "Top-tier security for your funds and data. We take protection seriously." },
-  { icon: "📡", title: "Live Signals", desc: "Verified entry, exit, and direction calls from our mentor team daily." },
-  { icon: "👥", title: "Community", desc: "Join thousands of traders sharing insights, asking questions, and growing together daily." },
-  { icon: "📚", title: "Courses", desc: "Structured courses from beginner to advanced. Learn at your own pace." },
-  { icon: "🎯", title: "Live Trading", desc: "Trade alongside professional traders in real-time. Watch and learn." },
-  { icon: "🤝", title: "Mentorships", desc: "One-on-one guidance from experienced traders who've been where you are." },
-  { icon: "💻", title: "Simulated Trading", desc: "Practice with live market conditions using virtual money. Zero risk." },
-  { icon: "📈", title: "Market Analysis", desc: "Daily breakdowns of market movements and trading opportunities." },
-];
-
 const FAQS = [
-  { q: "Do I need experience to start?", a: "Not at all! We have courses for absolute beginners. You'll learn everything from scratch." },
-  { q: "How much does it cost?", a: "We have one simple plan at $99/month. No hidden fees, cancel anytime." },
-  { q: "Can I try before I buy?", a: "Yes! Start with our free tier. No credit card required to begin learning." },
-  { q: "Are the signals really profitable?", a: "We provide verified signals from professional traders. Past performance doesn't guarantee future results, but our community sees consistent results." },
-  { q: "How do I join live trading sessions?", a: "Live sessions are included in your plan. Watch, ask questions, and trade along with mentors." },
-  { q: "Is my money safe?", a: "Yes! We're fully regulated and use bank-level security for all transactions." },
+  { q: "Do I need experience to start?", a: "Not at all! We have courses for absolute beginners." },
+  { q: "How much does it cost?", a: "R420/month. No hidden fees, cancel anytime." },
+  {
+    q: "Can I try before I buy?",
+    a: (
+      <>
+        <a href="#" style={{ color: '#00C9A7', textDecoration: 'underline', fontWeight: 600 }}>Watch the video</a> below for a full breakdown. We offer a fixed plan, so trials aren't available.
+      </>
+    )
+  },
+  { q: "Is my money safe?", a: "We are an educational platform — we do not handle trading funds, only subscription fees." },
 ];
 
 function useCounter(target, duration = 1800) {
   const [display, setDisplay] = useState("0");
   const ref = useRef(null);
   const started = useRef(false);
+
   useEffect(() => {
     const observer = new IntersectionObserver(([e]) => {
       if (e.isIntersecting && !started.current) {
@@ -83,148 +78,163 @@ function FAQItem({ question, answer, isOpen, onClick }) {
   );
 }
 
-export default function Academy() {
+export default function Academy({ onLoginClick, onSignupClick }) {
   const [openFaq, setOpenFaq] = useState(null);
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
+  const handleSignup = (e) => {
+    e.preventDefault();
+    if (onSignupClick) onSignupClick();
+  };
+
   return (
     <div className="page">
-
       <nav className="nav">
-        <div className="logo">Blue <span>Chip</span>Trading</div>
+        <div className="logo">Blue <span>Chip</span> Trading</div>
         <div className="nav-links">
           <a href="#">Courses</a>
           <a href="#">Mentorship</a>
           <a href="#">Signals</a>
-          <a href="#">Community</a>
           <a href="#">Pricing</a>
         </div>
         <div className="nav-right">
-          <a href="#" className="nav-login">Log In</a>
-          <a href="#" className="nav-signup">Sign Up</a>
           <a href="#" className="nav-careers">Become a Mentor</a>
+          <a
+            href="#"
+            className="nav-login"
+            onClick={(e) => { e.preventDefault(); onLoginClick(); }}
+          >
+            Log In
+          </a>
+          {/* Nav Sign Up */}
+          <a href="#" className="nav-signup" onClick={handleSignup}>
+            Sign Up
+          </a>
         </div>
       </nav>
 
       <section className="hero">
         <div className="hero-left">
           <div className="hero-badge">Forex Education — Done Properly</div>
-          <h1 className="hero-h1">
-            Learn to Trade.<br />
-            <em>The Right Way.</em>
-          </h1>
-          <p className="hero-p">
-            Structured courses, live mentorship, verified signals, and a community
-            of real traders — one platform, one simple monthly price.
-          </p>
+          <h1 className="hero-h1">Learn to Trade.<br /><em>The Right Way.</em></h1>
+          <p className="hero-p">Structured courses, live trading sessions, verified signals, and a thriving community of real traders.</p>
+          {/* Hero CTA */}
+          <button className="hero-cta" onClick={handleSignup}>
+            Get Started Free →
+          </button>
           <p className="hero-note">No credit card required · Cancel anytime</p>
         </div>
         <div className="hero-right">
-          <img src="2.jpg" alt="Example" className="hero-image" />
+          <img src="2.jpg" alt="Trading" className="hero-image" />
         </div>
       </section>
 
       <section className="stats-row">
         <Stat value="2,400+" label="Active Students" />
         <Stat value="94%" label="Completion Rate" />
-        <Stat value="18" label="Structured Courses" />
+        <Stat value="18" label="Courses" />
         <Stat value="Live" label="Daily Sessions" />
       </section>
 
-      {/* PRICING - single plan */}
-      <section className="section pricing-section">
-        <div className="eyebrow center">Simple Pricing</div>
-        <h2 className="h2 center">One Plan. Everything Included.</h2>
-        <p className="pricing-subtitle center">No tiers, no confusion. Just full access for one flat rate.</p>
-        <div className="pricing-single">
-          <div className="pricing-card recommended">
-            <div className="pricing-name">Pro</div>
-            <div className="pricing-price">R420<span>/month</span></div>
-            <ul className="pricing-features">
-              <li>✓ All Courses</li>
-              <li>✓ Live Trading Sessions with Professional</li>
-              <li>✓ Verified Signals</li>
-              <li>✓ Mentorship Access</li>
-              <li>✓ Priority Support</li>
-              <li>✓ Simulated Trading</li>
-              <li>✓ Live Forex Chart</li>
-              <li>✓ Market Analysis</li>
-              <li>✓ Exclusive Trading community</li>
-              <li><b>We decided on a single, transparent price for everyone — making quality education and trading skills accessible to all</b></li>
-            </ul>
-            <button className="pricing-btn">Get Started</button>
+      <section className="section about-section">
+        <div className="eyebrow center">Who Are We</div>
+        <h2 className="h2 center">The Story Behind Blue Chip Trading</h2>
+        <div className="center" style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <p className="hero-p" style={{ margin: '0 auto' }}>
+            It started with a group of friends in a college library no mentors, no shortcuts, just a shared hunger for more.
+            Late nights turned into early mornings.
+            Losses, setbacks, pressure, we went through it all together.
+            There were times it didn't make sense.
+            Times we wanted to quit. But we didn't.
+            We stayed locked in… until it finally clicked.
+            And when it did, we didn't leave anyone behind.
+            That's how Blue Chip Trading was built — a brotherhood that turned struggle into skill, and now helps others win.<br />
+
+            <b><u>Today, Blue Chip Trading has grown into a global community built on discipline, consistency, and real results.
+            What started as a small group of friends is now a team helping traders around the world learn, improve, and take control of their journey —
+            the right way.</u></b>
+          </p>
+        </div>
+      </section>
+
+      {/* --- SINGLE TEAM MEMBER SECTION --- */}
+      <section className="section team-section">
+        <div className="team-container">
+          <div className="team-image-side">
+            <img src="team-member.jpg" alt="Founders" className="team-main-img" />
+            <div className="team-img-accent"></div>
+          </div>
+          <div className="team-text-side">
+            <div className="eyebrow">Our Team</div>
+            <h2 className="h2">Meet the Team</h2>
+            <p className="team-description">
+              At Blue Chip Trading, you aren't just learning from a single individual. You are gaining access to a collective powerhouse of multiple professional traders, each specializing in a different pillar of the financial markets. We've combined our years of trial and error to create a single, unified path for our students.<br />
+
+              <b><u>The Core Pillars:</u></b><br />
+              <b><u>Technical Mastery</u></b>: Precision entry and exit strategies developed over a decade of chart analysis.<br />
+              <b><u>Fundamental Insight</u></b>: Deep-dive breakdowns of the "why" behind major market movements.<br />
+              <b><u>Risk Management</u></b>: Battle-tested frameworks designed to protect your capital above all else.<br />
+              <b><u>Trading Psychology</u></b>: Coaching focused on building the discipline and patience of a professional.<br />
+              <b><u>Live Mentorship</u></b>: Real-time guidance to help you navigate live market conditions as they unfold.<br /><br />
+            </p>
+            <div className="team-quote">
+              <b><u>"Our mission is simple: to provide the clarity, transparency, and community we wish we had when we first started."</u></b>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="section platform-section">
-        <div className="eyebrow center">Everything You Need</div>
-        <h2 className="h2 center">All-in-One Trading Platform</h2>
-        <div className="platform-grid">
-          {PLATFORM_FEATURES.map((f, i) => (
-            <div key={i} className="platform-card">
-              <div className="platform-icon">{f.icon}</div>
-              <div className="platform-title">{f.title}</div>
-              <p className="platform-desc">{f.desc}</p>
-            </div>
-          ))}
+      <section className="section pricing-section">
+        <div className="eyebrow center">Simple Pricing</div>
+        <h2 className="h2 center">One Plan. Everything Included.</h2>
+        <div className="pricing-card">
+          <div className="pricing-name">All-in Access</div>
+          <div className="pricing-price">R420<span>/month</span></div>
+          <ul className="pricing-features">
+            <li>✓ All Professional Courses</li>
+            <li>✓ Live Trading Sessions</li>
+            <li>✓ Verified Daily Signals</li>
+            <li>✓ Exclusive Community Access</li>
+            <li>✓ Simulated Trading</li>
+            <li>✓ Market Analysis</li>
+          </ul>
+          {/* Pricing CTA */}
+          <button className="pricing-btn" onClick={handleSignup}>
+            Get Started Now
+          </button>
         </div>
       </section>
 
       <section className="section steps-section">
         <div className="eyebrow center">How It Works</div>
-        <h2 className="h2 center">Get Started in 3 Simple Steps</h2>
+        <h2 className="h2 center">Get Started in 3 Steps</h2>
         <div className="steps-grid">
           {STEPS.map((s, i) => (
             <div key={i} className="step-card">
               <div className="step-num">{s.n}</div>
               <div className="step-title">{s.title}</div>
               <p className="step-desc">{s.desc}</p>
+              {/* Step 1 gets a direct signup CTA */}
+              {i === 0 && (
+                <button className="step-cta" onClick={handleSignup}>
+                  Create Account →
+                </button>
+              )}
               {i < STEPS.length - 1 && <div className="step-arrow">→</div>}
             </div>
           ))}
         </div>
       </section>
 
-      <section className="section whyus-section">
-        <div className="eyebrow center">Why Choose Us</div>
-        <h2 className="h2 center">Everything You Need.<br />All in One Place.</h2>
-        <div className="whyus-grid">
-          {WHY_US.map((w, i) => (
-            <div key={i} className="why-card">
-              <div className="why-icon">{w.icon}</div>
-              <div className="why-title">{w.title}</div>
-              <p className="why-desc">{w.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CAREER SECTION - moved lower */}
       <section className="career-section">
         <div className="career-content">
-          <div className="career-icon">🏆</div>
           <h2 className="career-title">Are You a Skilled Trader?</h2>
-          <p className="career-desc">
-            Prove your skills and join our elite team of professional traders.
-            We're looking for talented individuals who can analyze markets,
-            identify opportunities, and help our community grow.
-          </p>
+          <p className="career-desc">Join our elite team. Prove your skills and help our community grow.</p>
           <button className="career-btn">Apply Now →</button>
         </div>
         <div className="career-stats">
-          <div className="career-stat">
-            <div className="career-stat-value">R50K+</div>
-            <div className="career-stat-label">Average Earnings</div>
-          </div>
-          <div className="career-stat">
-            <div className="career-stat-value">24/7</div>
-            <div className="career-stat-label">Global Markets</div>
-          </div>
-          <div className="career-stat">
-            <div className="career-stat-value">100%</div>
-            <div className="career-stat-label">Remote Work</div>
-          </div>
+          <div className="career-stat"><div className="career-stat-value">R20K+</div><div className="career-stat-label">Avg Earnings</div></div>
+          <div className="career-stat"><div className="career-stat-value">100%</div><div className="career-stat-label">Remote</div></div>
         </div>
       </section>
 
@@ -233,17 +243,16 @@ export default function Academy() {
         <h2 className="h2 center">Frequently Asked Questions</h2>
         <div className="faq-grid">
           {FAQS.map((faq, i) => (
-            <FAQItem
-              key={i}
-              question={faq.q}
-              answer={faq.a}
-              isOpen={openFaq === i}
-              onClick={() => toggleFaq(i)}
-            />
+            <FAQItem key={i} question={faq.q} answer={faq.a} isOpen={openFaq === i} onClick={() => toggleFaq(i)} />
           ))}
         </div>
+        {/* Bottom CTA */}
+        <div style={{ textAlign: 'center', marginTop: '48px' }}>
+          <button className="pricing-btn" onClick={handleSignup}>
+            Join Blue Chip Trading →
+          </button>
+        </div>
       </section>
-
     </div>
   );
 }

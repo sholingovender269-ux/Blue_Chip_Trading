@@ -8,11 +8,3 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>
 );
-// Add this script to your HTML file
-window.addEventListener('scroll', function() {
-  if (window.scrollY > 50) {
-    document.body.classList.add('scrolled');
-  } else {
-    document.body.classList.remove('scrolled');
-  }
-});

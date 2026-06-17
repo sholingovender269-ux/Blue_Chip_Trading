@@ -1,0 +1,562 @@
+/* signup.css - Kinetic Design System — Signup Extension */
+
+/* -----------------------------------------------------------
+   1. Page Layout — same cinematic depth as login
+   ----------------------------------------------------------- */
+.signup-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-dark, #080d0c);
+  background-image: radial-gradient(circle at center, #111e1b 0%, #080d0c 55%, #040807 100%);
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Data-grid texture */
+.signup-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border, #1a2926) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border, #1a2926) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: center;
+  opacity: 0.035;
+  pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   2. Card — wider for the signup form
+   ----------------------------------------------------------- */
+.signup-card {
+  background: #0d1210;
+  width: 100%;
+  max-width: 560px;
+  padding: 56px 48px 48px;
+  border-radius: 30px;
+  border: 1px solid var(--border, #1a2926);
+  position: relative;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+}
+
+.signup-card:hover {
+  transform: translateY(-6px) scale(1.005);
+  border-color: rgba(0, 201, 167, 0.28);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.7),
+    0 0 30px rgba(0, 201, 167, 0.12);
+}
+
+/* Inner wire glow */
+.signup-card::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 24px;
+  border: 1px solid rgba(0, 201, 167, 0.05);
+  pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   3. Header
+   ----------------------------------------------------------- */
+.signup-header {
+  text-align: center;
+  margin-bottom: 36px;
+  position: relative;
+  z-index: 2;
+}
+
+.signup-logo {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted, #94a8a1);
+}
+
+.signup-logo span {
+  color: var(--primary, #00c9a7);
+  font-weight: 800;
+}
+
+.signup-badge {
+  display: inline-block;
+  background: rgba(0, 201, 167, 0.08);
+  color: var(--primary, #00c9a7);
+  border: 1px solid rgba(0, 201, 167, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 10px rgba(0, 201, 167, 0.08);
+}
+
+.signup-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.signup-header p {
+  color: var(--text-muted, #94a8a1);
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* -----------------------------------------------------------
+   4. Form Structure
+   ----------------------------------------------------------- */
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Side-by-side name row */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--text-muted, #94a8a1);
+  padding-left: 2px;
+}
+
+.optional-tag {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.78rem;
+  opacity: 0.65;
+}
+
+.input-group input {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(5px);
+  border: 1px solid var(--border, #1a2926);
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.97rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-group input::placeholder {
+  color: rgba(148, 168, 161, 0.4);
+}
+
+.input-group input:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(148, 168, 161, 0.35);
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary, #00c9a7);
+  background: rgba(0, 201, 167, 0.03);
+  box-shadow: 0 0 0 3px rgba(0, 201, 167, 0.08), 0 0 15px rgba(0, 201, 167, 0.08);
+}
+
+.input-group input.input-error {
+  border-color: rgba(255, 94, 94, 0.6);
+  background: rgba(255, 94, 94, 0.03);
+}
+
+.field-error {
+  font-size: 0.78rem;
+  color: #ff7070;
+  font-weight: 500;
+  padding-left: 2px;
+  display: block;
+  margin-top: -2px;
+}
+
+/* -----------------------------------------------------------
+   5. Password Field with Show/Hide
+   ----------------------------------------------------------- */
+.password-wrapper {
+  position: relative;
+}
+
+.password-wrapper input {
+  padding-right: 70px;
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted, #94a8a1);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 4px;
+}
+
+.toggle-visibility:hover {
+  color: var(--primary, #00c9a7);
+}
+
+/* -----------------------------------------------------------
+   6. Password Strength Meter
+   ----------------------------------------------------------- */
+.strength-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+
+.strength-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  transition: background 0.3s ease;
+}
+
+.strength-bar.strength-weak    { background: #ff5e5e; }
+.strength-bar.strength-fair    { background: #ffaa33; }
+.strength-bar.strength-good    { background: #ffdd55; }
+.strength-bar.strength-strong  { background: #00c9a7; }
+.strength-bar.strength-vstrong { background: #00ffcc; }
+
+.strength-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  width: 72px;
+  text-align: right;
+}
+
+.strength-label.strength-weak    { color: #ff5e5e; }
+.strength-label.strength-fair    { color: #ffaa33; }
+.strength-label.strength-good    { color: #ffdd55; }
+.strength-label.strength-strong  { color: #00c9a7; }
+.strength-label.strength-vstrong { color: #00ffcc; }
+
+/* -----------------------------------------------------------
+   7. Password Requirements — always visible pill chips
+   ----------------------------------------------------------- */
+.password-requirements {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 5px 10px 5px 5px;
+  border-radius: 20px;
+  border: 1px solid;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+/* Unmet — dim ghost pill */
+.req-unmet {
+  color: rgba(148, 168, 161, 0.5);
+  border-color: rgba(148, 168, 161, 0.15);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Met — lit up green pill */
+.req-met {
+  color: var(--primary, #00c9a7);
+  border-color: rgba(0, 201, 167, 0.35);
+  background: rgba(0, 201, 167, 0.07);
+}
+
+/* The icon badge inside the pill */
+.req-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-family: "Courier New", monospace;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.req-unmet .req-pill {
+  background: rgba(148, 168, 161, 0.1);
+  color: rgba(148, 168, 161, 0.5);
+}
+
+.req-met .req-pill {
+  background: rgba(0, 201, 167, 0.15);
+  color: var(--primary, #00c9a7);
+}
+
+/* -----------------------------------------------------------
+   8. Terms Checkbox
+   ----------------------------------------------------------- */
+.terms-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text-muted, #94a8a1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.checkbox input[type="checkbox"] {
+  accent-color: var(--primary, #00c9a7);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  margin-top: 2px;
+  flex-shrink: 0;
+  /* reset inherited input styles */
+  background: unset;
+  border: unset;
+  padding: unset;
+  border-radius: unset;
+}
+
+.terms-link {
+  color: var(--primary, #00c9a7);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.terms-link:hover {
+  color: var(--primary-hover, #00e8c0);
+  text-decoration: underline;
+}
+
+/* -----------------------------------------------------------
+   9. Submit Button
+   ----------------------------------------------------------- */
+.signup-btn {
+  background: var(--primary, #00c9a7);
+  color: #000;
+  padding: 17px;
+  border-radius: 14px;
+  border: none;
+  font-weight: 800;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.signup-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.signup-btn:not(:disabled):hover {
+  background: var(--primary-hover, #00e8c0);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0, 201, 167, 0.3);
+}
+
+.signup-btn:not(:disabled):active {
+  transform: translateY(-1px) scale(0.99);
+  box-shadow: 0 5px 15px rgba(0, 201, 167, 0.2);
+}
+
+/* Sweep shimmer */
+.signup-btn::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  transition: left 0.55s;
+  pointer-events: none;
+}
+
+.signup-btn:not(:disabled):hover::before {
+  left: 100%;
+}
+
+/* Loading state inside button */
+.btn-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,0,0,0.25);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* -----------------------------------------------------------
+   10. Footer
+   ----------------------------------------------------------- */
+.signup-footer {
+  text-align: center;
+  margin-top: 36px;
+  color: var(--text-muted, #94a8a1);
+  font-size: 0.9rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+}
+
+.signup-footer p {
+  margin: 0;
+}
+
+.login-link {
+  background: none;
+  border: none;
+  color: var(--primary, #00c9a7);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: var(--primary-hover, #00e8c0);
+  text-decoration: underline;
+}
+
+.signup-footer hr {
+  border: none;
+  border-top: 1px solid var(--border, #1a2926);
+  opacity: 0.15;
+  margin: 24px 0 20px;
+}
+
+.demo-btn {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #94a8a1);
+  padding: 11px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  transition: all 0.3s;
+  display: inline-block;
+}
+
+.demo-btn:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* -----------------------------------------------------------
+   11. Responsive
+   ----------------------------------------------------------- */
+@media (max-width: 580px) {
+  .signup-card {
+    padding: 44px 22px 40px;
+    border-radius: 22px;
+  }
+
+  .input-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .signup-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .password-requirements {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signup-card,
+  .signup-btn,
+  .input-group input,
+  .demo-btn {
+    transition: none;
+  }
+
+  .spinner {
+    animation: none;
+  }
+}

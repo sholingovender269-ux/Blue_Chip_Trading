@@ -1,0 +1,255 @@
+/* Verification.css */
+
+.bank-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(circle at center, #111e1b 0%, #080d0c 50%, var(--bg-dark) 100%);
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bank-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.03;
+    pointer-events: none;
+}
+
+.confirmation-card {
+    background: #0d1210;
+    width: 100%;
+    max-width: 520px;
+    padding: 50px 40px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    z-index: 2;
+}
+
+.confirmation-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    border-color: rgba(0, 201, 167, 0.3);
+    box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.7),
+        0 0 30px rgba(0, 201, 167, 0.15);
+}
+
+.confirmation-card::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 201, 167, 0.05);
+    pointer-events: none;
+}
+
+.bank-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.bank-logo {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.secure-badge {
+    background: rgba(0, 201, 167, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(0, 201, 167, 0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(0, 201, 167, 0.1);
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    opacity: 0.2;
+    margin: 20px 0 35px;
+}
+
+.status-visual {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.spinner {
+    width: 80px;
+    height: 80px;
+    border: 5px solid rgba(255,255,255,0.08);
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-shadow: 0 0 20px rgba(0, 201, 167, 0.15);
+}
+
+.success-icon {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: rgba(0, 201, 167, 0.08);
+    border: 2px solid var(--primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--primary);
+    font-size: 3rem;
+    font-weight: bold;
+    box-shadow: 0 0 30px rgba(0, 201, 167, 0.2);
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.transaction-info {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.label {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+}
+
+.status-text {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.processing {
+    color: #ffffff;
+}
+
+.processed {
+    color: var(--primary);
+}
+
+.timer-alert {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.success-msg {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.details-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 35px;
+}
+
+.detail-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-item:hover {
+    border-color: rgba(0, 201, 167, 0.2);
+    background: rgba(255,255,255,0.03);
+}
+
+.detail-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.detail-value {
+    color: white;
+    font-weight: 700;
+    text-align: right;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-disabled {
+    background: rgba(255,255,255,0.05);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.btn-ready {
+    background: var(--primary);
+    color: #000;
+}
+
+.btn-ready:hover {
+    background: var(--primary-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 201, 167, 0.3);
+}
+
+@media (max-width: 500px) {
+    .confirmation-card {
+        padding: 40px 25px;
+        border-radius: 20px;
+    }
+
+    .bank-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .status-text {
+        font-size: 1.6rem;
+    }
+
+    .detail-item {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+}
