@@ -1,7 +1,8 @@
 import { useState } from "react";
 import "./Login.css";
+import { supabase } from "./supabaseClient";
 
-export default function LoginPage({ onLogin, onBack }) {
+export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotPassword, onGoToAdmin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,23 +19,75 @@ export default function LoginPage({ onLogin, onBack }) {
     setLoading(true);
 
     try {
-      const res = await fetch("https://blue-chip.infinityfree.me/login.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, role }),
-        }
-      );
+      // Step 1: Sign in with Supabase Auth (all roles, including admin)
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      const data = await res.json();
-
-      if (data.success) {
-        localStorage.setItem("bct_user", JSON.stringify(data.user));
-        if (onLogin) onLogin(data.user);
-      } else {
-        setError(data.error || "Login failed. Please try again.");
+      if (authError) {
+        console.log("Auth error:", authError.message, authError.status);
+        setError(authError.message);
+        return;
       }
+
+      if (role === "admin") {
+        // Step 2 (admin): look them up in the admins table
+        const { data: adminData, error: adminError } = await supabase
+          .from("admins")
+          .select("*")
+          .eq("id", authData.user.id)
+          .single();
+
+        if (adminError || !adminData) {
+          setError("This account is not registered as an admin.");
+          await supabase.auth.signOut();
+          return;
+        }
+
+        const user = {
+          id: adminData.id,
+          firstName: adminData.name,
+          lastName: adminData.surname,
+          name: `${adminData.name} ${adminData.surname}`,
+          email: adminData.email,
+          role: "admin",
+        };
+
+        localStorage.setItem("bct_user", JSON.stringify(user));
+        if (onLogin) onLogin(user);
+        if (onGoToAdmin) onGoToAdmin();
+        return;
+      }
+
+      // Step 2 (client/mentor): look them up in the clients table
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("email", email)
+        .single();
+
+      if (clientError || !clientData) {
+        setError("Account not found.");
+        return;
+      }
+
+      const user = {
+        id: authData.user.id,
+        firstName: clientData.first_name,
+        lastName: clientData.last_name,
+        name: `${clientData.first_name} ${clientData.last_name}`,
+        email: clientData.email,
+        idNumber: clientData.id_number,
+        role,
+      };
+
+      localStorage.setItem("bct_user", JSON.stringify(user));
+      if (onLogin) onLogin(user);
+
     } catch (err) {
-      setError("Could not connect to server. Make sure XAMPP is running.");
+      console.error(err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +106,6 @@ export default function LoginPage({ onLogin, onBack }) {
 
           <form onSubmit={handleSubmit} className="login-form">
 
-            {/* Role Selector */}
             <div className="role-selector">
               {[
                 { id: "client", icon: "📈", label: "Client"  },
@@ -93,10 +145,13 @@ export default function LoginPage({ onLogin, onBack }) {
             </div>
 
             <div className="login-options">
-              <label className="checkbox">
-                <input type="checkbox" /> Remember me
-              </label>
-              <a href="#" className="forgot-link">Forgot password?</a>
+              <button
+                type="button"
+                className="forgot-link"
+                onClick={onGoToForgotPassword}
+              >
+                Forgot password?
+              </button>
             </div>
 
             {error && <div className="error-message">{error}</div>}
@@ -115,7 +170,7 @@ export default function LoginPage({ onLogin, onBack }) {
 
           <div className="login-footer">
             Don't have an account?{" "}
-            <button className="signup-link">Sign Up</button>
+            <button className="signup-link" onClick={onGoToSignup}>Sign Up</button>
             <br /><br />
             <button className="demo-btn" onClick={onBack}>← Back to Home</button>
           </div>

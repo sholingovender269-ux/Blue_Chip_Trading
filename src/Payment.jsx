@@ -10,13 +10,6 @@ const formatExpiry = (val) => {
   return digits.length >= 3 ? digits.slice(0, 2) + "/" + digits.slice(2) : digits;
 };
 
-const detectCardType = (num) => {
-  const raw = num.replace(/\s/g, "");
-  if (/^4/.test(raw)) return "visa";
-  if (/^5[1-5]/.test(raw) || /^2(2[2-9]|[3-6]\d|7[01])/.test(raw)) return "mastercard";
-  return null;
-};
-
 export default function Payment({ user = {}, onSuccess, onBack }) {
   const [form, setForm] = useState({
     cardNumber: "",
@@ -28,8 +21,6 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
-
-  const cardType = detectCardType(form.cardNumber);
 
   const handleChange = (e) => {
     let { name, value } = e.target;
@@ -43,44 +34,38 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
   const validate = () => {
     const errs = {};
     const raw = form.cardNumber.replace(/\s/g, "");
-
-    if (!cardType) errs.cardNumber = "Only Visa and Mastercard are accepted.";
-    else if (raw.length !== 16) errs.cardNumber = "Card number must be 16 digits.";
-
+    if (raw.length !== 16) errs.cardNumber = "Card number must be 16 digits.";
     if (!form.cardName.trim()) errs.cardName = "Name on card is required.";
-
     const [mm, yy] = form.expiry.split("/");
     const now = new Date();
     const expiryDate = new Date(2000 + parseInt(yy, 10), parseInt(mm, 10) - 1, 1);
     if (!mm || !yy || parseInt(mm, 10) < 1 || parseInt(mm, 10) > 12)
       errs.expiry = "Enter a valid expiry date (MM/YY).";
     else if (expiryDate < now) errs.expiry = "This card has expired.";
-
     if (form.cvv.length < 3) errs.cvv = "CVV must be 3–4 digits.";
     if (!form.address.trim()) errs.address = "Address is required.";
-
     return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validate();
-
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
-
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1400));
     setLoading(false);
     setShowVerification(true);
   };
 
+  const fullName = user.name || `${user.firstName || ""} ${user.lastName || ""}`.trim();
+
   if (showVerification) {
     return (
       <Verification
-        name={user?.name}
+        name={fullName}
         email={user?.email}
         user={user}
         address={form.address}
@@ -122,10 +107,10 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
 
         <div className="card-brands">
           <span className="card-brand-label">Accepted:</span>
-          <div className={`card-chip visa-chip ${cardType === "visa" ? "chip-active" : ""}`}>
+          <div className="card-chip visa-chip chip-active">
             <span className="visa-text">VISA</span>
           </div>
-          <div className={`card-chip mc-chip ${cardType === "mastercard" ? "chip-active" : ""}`}>
+          <div className="card-chip mc-chip chip-active">
             <svg viewBox="0 0 36 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard">
               <circle cx="13" cy="12" r="10" fill="#EB001B" />
               <circle cx="23" cy="12" r="10" fill="#F79E1B" />
@@ -150,10 +135,6 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
                 className={errors.cardNumber ? "input-error" : ""}
                 autoComplete="cc-number"
               />
-              <span className={`card-type-badge ${cardType ? "visible" : ""}`}>
-                {cardType === "visa" && "VISA"}
-                {cardType === "mastercard" && "MC"}
-              </span>
             </div>
             {errors.cardNumber && <span className="field-error">{errors.cardNumber}</span>}
           </div>
@@ -190,9 +171,8 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
               {errors.expiry && <span className="field-error">{errors.expiry}</span>}
             </div>
             <div className="input-group">
-              <label htmlFor="cvv">
-                CVV
-                <span className="cvv-hint" title="3 digits on back of card, 4 on Amex"> ⓘ</span>
+              <label htmlFor="cvv">CVV
+                <span className="cvv-hint" title="3 digits on back of card"> ⓘ</span>
               </label>
               <input
                 id="cvv"
@@ -214,7 +194,7 @@ export default function Payment({ user = {}, onSuccess, onBack }) {
             <input
               id="address"
               name="address"
-              type="text"
+  type="text"
               placeholder="e.g. 12 Main Street, Johannesburg"
               value={form.address}
               onChange={handleChange}

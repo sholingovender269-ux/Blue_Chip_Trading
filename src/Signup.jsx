@@ -1,107 +1,129 @@
 import { useState } from "react";
 import "./Signup.css";
+import { supabase } from "./supabaseClient";
 
-const passwordRules = [
-  { id: "length", icon: "8+", label: "8 characters", test: (p) => p.length >= 8 },
-  { id: "upper", icon: "A", label: "1 uppercase", test: (p) => /[A-Z]/.test(p) },
-  { id: "lower", icon: "a", label: "1 lowercase", test: (p) => /[a-z]/.test(p) },
-  { id: "number", icon: "1", label: "1 number", test: (p) => /\d/.test(p) },
-  { id: "special", icon: "_", label: "1 special (!@#$_)", test: (p) => /[^A-Za-z0-9]/.test(p) },
-];
-
-const strengthMap = [
-  { label: "Too Weak",  cls: "strength-weak" },
-  { label: "Weak",      cls: "strength-weak" },
-  { label: "Fair",      cls: "strength-fair" },
-  { label: "Good",      cls: "strength-good" },
-  { label: "Strong",    cls: "strength-strong" },
-  { label: "V. Strong", cls: "strength-vstrong" },
-];
-
-function formatSAPhone(value) {
-  let digits = value.replace(/[^\d]/g, "");
-  digits = digits.replace(/^27/, "").replace(/^0/, "");
-  digits = digits.slice(0, 9);
-  const p1 = digits.slice(0, 2);
-  const p2 = digits.slice(2, 5);
-  const p3 = digits.slice(5, 9);
-  let result = "+27";
-  if (p1) result += " " + p1;
-  if (p2) result += " " + p2;
-  if (p3) result += " " + p3;
-  return result;
-}
-
-export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
+export default function Signup({ onGoToPayment }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phone: "+27 ",
     idNumber: "",
     password: "",
     confirmPassword: "",
     agreeTerms: false,
   });
 
-  const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const passwordStrength = passwordRules.filter((r) => r.test(form.password)).length;
-  const strength = strengthMap[passwordStrength];
+  const [errors, setErrors] = useState({});
 
   const validate = () => {
     const newErrors = {};
-    if (!form.firstName.trim()) newErrors.firstName = "First name is required.";
-    if (!form.lastName.trim()) newErrors.lastName = "Last name is required.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      newErrors.email = "Enter a valid email address.";
-    if (!form.idNumber || !/^\d{13}$/.test(form.idNumber))
-      newErrors.idNumber = "ID number is required and must be exactly 13 digits.";
-    if (passwordStrength < 5)
-      newErrors.password = "Please meet all password requirements.";
-    if (form.password !== form.confirmPassword)
-      newErrors.confirmPassword = "Passwords do not match.";
-    if (!form.agreeTerms)
-      newErrors.agreeTerms = "You must agree to the Terms of Service.";
+    if (!form.firstName.trim()) newErrors.firstName = "First name required";
+    if (!form.lastName.trim()) newErrors.lastName = "Last name required";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "Invalid email";
+    if (!/^\d{13}$/.test(form.idNumber)) newErrors.idNumber = "ID must be 13 digits";
+    if (form.password.length < 6) newErrors.password = "Password too short";
+    if (form.password !== form.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    if (!form.agreeTerms) newErrors.agreeTerms = "You must agree to terms";
     return newErrors;
   };
 
   const handleChange = (e) => {
-    let { name, value, type, checked } = e.target;
-    if (name === "phone") value = formatSAPhone(value);
-    if (name === "idNumber") value = value.replace(/[^\d]/g, "").slice(0, 13);
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value, type, checked } = e.target;
+
+    // Cap ID number at 13 digits
+    if (name === "idNumber") {
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 13);
+      setForm((prev) => ({ ...prev, idNumber: digitsOnly }));
+      if (errors.idNumber) setErrors((prev) => ({ ...prev, idNumber: "" }));
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  // Password strength logic
+  const getPasswordStrength = (pwd) => {
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    if (pwd.length >= 12) score++;
+    return score;
+  };
+
+  const strengthScore = getPasswordStrength(form.password);
+  const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
+  const strengthClasses = ["", "strength-weak", "strength-fair", "strength-good", "strength-strong", "strength-vstrong"];
+
+  const requirements = [
+    { label: "8+ chars",   met: form.password.length >= 8 },
+    { label: "Uppercase",  met: /[A-Z]/.test(form.password) },
+    { label: "Number",     met: /[0-9]/.test(form.password) },
+    { label: "Symbol",     met: /[^A-Za-z0-9]/.test(form.password) },
+  ];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
 
-    const userData = {
-      name: `${form.firstName} ${form.lastName}`,
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      idNumber: form.idNumber,
-      password: form.password,
-    };
+    try {
+      // Step 1: Create Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
 
-    localStorage.setItem("bct_user", JSON.stringify(userData));
-    if (onGoToPayment) onGoToPayment(userData);
+      if (authError) {
+        alert(authError.message || "Signup failed");
+        return;
+      }
+
+      // Step 2: Insert into clients table
+      const { error: insertError } = await supabase
+        .from("clients")
+        .insert([{
+          first_name: form.firstName,
+          last_name: form.lastName,
+          email: form.email,
+          id_number: form.idNumber,
+        }])
+        .select();
+
+      if (insertError) {
+        alert(insertError.message || "Failed to save client details");
+        return;
+      }
+
+      const payload = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        name: `${form.firstName} ${form.lastName}`,
+        email: form.email,
+        idNumber: form.idNumber,
+      };
+
+      localStorage.setItem("bct_user", JSON.stringify(payload));
+
+      if (onGoToPayment) {
+        onGoToPayment(payload);
+      }
+
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -109,24 +131,27 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
       <div className="signup-card">
 
         <div className="signup-header">
-          <h1>Join Blue Chip Trading</h1>
-          <p>Create your account</p>
+          <div className="signup-logo">BLUE<span>CHIP</span></div>
+          <div className="signup-badge">Create Account</div>
+          <h1>Get Started</h1>
+          <p>Join Blue Chip Trading today</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="signup-form">
+        <form className="signup-form" onSubmit={handleSubmit}>
 
           <div className="input-row">
             <div className="input-group">
               <label>First Name</label>
               <input
                 name="firstName"
-                placeholder="John"
+                placeholder="Jane"
                 value={form.firstName}
                 onChange={handleChange}
                 className={errors.firstName ? "input-error" : ""}
               />
               {errors.firstName && <span className="field-error">{errors.firstName}</span>}
             </div>
+
             <div className="input-group">
               <label>Last Name</label>
               <input
@@ -144,7 +169,7 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
             <label>Email</label>
             <input
               name="email"
-              placeholder="john@example.com"
+              placeholder="jane@example.com"
               value={form.email}
               onChange={handleChange}
               className={errors.email ? "input-error" : ""}
@@ -153,23 +178,14 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
           </div>
 
           <div className="input-group">
-            <label>Phone <span className="optional-tag">(optional)</span></label>
-            <input
-              name="phone"
-              placeholder="+27 82 123 4567"
-              value={form.phone}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="input-group">
-            <label>ID Number</label>
+            <label>ID Number <span className="optional-tag">({form.idNumber.length}/13)</span></label>
             <input
               name="idNumber"
-              placeholder="8001015009087"
+              placeholder="13-digit SA ID"
               value={form.idNumber}
               onChange={handleChange}
               maxLength={13}
+              inputMode="numeric"
               className={errors.idNumber ? "input-error" : ""}
             />
             {errors.idNumber && <span className="field-error">{errors.idNumber}</span>}
@@ -179,68 +195,56 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
             <label>Password</label>
             <div className="password-wrapper">
               <input
+                type="password"
                 name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Create a password"
+                placeholder="Min. 6 characters"
                 value={form.password}
                 onChange={handleChange}
                 className={errors.password ? "input-error" : ""}
               />
-              <button
-                type="button"
-                className="toggle-visibility"
-                onClick={() => setShowPassword((v) => !v)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
             </div>
             {errors.password && <span className="field-error">{errors.password}</span>}
 
+            {/* Strength meter — only shows when typing */}
             {form.password.length > 0 && (
-              <div className="strength-meter">
-                <div className="strength-bars">
-                  {passwordRules.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`strength-bar ${i < passwordStrength ? strength.cls : ""}`}
-                    />
-                  ))}
+              <>
+                <div className="strength-meter">
+                  <div className="strength-bars">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`strength-bar ${i <= strengthScore ? strengthClasses[strengthScore] : ""}`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`strength-label ${strengthClasses[strengthScore]}`}>
+                    {strengthLabels[strengthScore]}
+                  </span>
                 </div>
-                <span className={`strength-label ${strength.cls}`}>{strength.label}</span>
-              </div>
-            )}
 
-            <ul className="password-requirements">
-              {passwordRules.map((r) => {
-                const met = r.test(form.password);
-                return (
-                  <li key={r.id} className={met ? "req-met" : "req-unmet"}>
-                    <span className="req-pill">{met ? "✓" : r.icon}</span>
-                    {r.label}
-                  </li>
-                );
-              })}
-            </ul>
+                <ul className="password-requirements">
+                  {requirements.map((req) => (
+                    <li key={req.label} className={req.met ? "req-met" : "req-unmet"}>
+                      <span className="req-pill">{req.met ? "✓" : "×"}</span>
+                      {req.label}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
 
           <div className="input-group">
             <label>Confirm Password</label>
             <div className="password-wrapper">
               <input
+                type="password"
                 name="confirmPassword"
-                type={showConfirm ? "text" : "password"}
-                placeholder="Repeat your password"
+                placeholder="Repeat password"
                 value={form.confirmPassword}
                 onChange={handleChange}
                 className={errors.confirmPassword ? "input-error" : ""}
               />
-              <button
-                type="button"
-                className="toggle-visibility"
-                onClick={() => setShowConfirm((v) => !v)}
-              >
-                {showConfirm ? "Hide" : "Show"}
-              </button>
             </div>
             {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
           </div>
@@ -253,7 +257,7 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
                 checked={form.agreeTerms}
                 onChange={handleChange}
               />
-              I agree to the <a href="#" className="terms-link">Terms of Service</a>
+              I agree to the <a href="#" className="terms-link">Terms & Conditions</a>
             </label>
             {errors.agreeTerms && <span className="field-error">{errors.agreeTerms}</span>}
           </div>
@@ -271,12 +275,7 @@ export default function Signup({ onGoToLogin, onGoToPayment, onBack }) {
         </form>
 
         <div className="signup-footer">
-          <hr />
-          <p>
-            Already have an account?{" "}
-            <button className="login-link" onClick={onGoToLogin}>Log in</button>
-          </p>
-          <button className="demo-btn" onClick={onBack}>← Back to Home</button>
+          <p>Already have an account? <button className="login-link" onClick={() => {}}>Sign In</button></p>
         </div>
 
       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import "./Verification.css";
+import { supabase } from "./supabaseClient";
 
 const STEPS = [
   { at: 0,  label: "Connecting to server..." },
@@ -22,12 +23,10 @@ export default function Verification({ name, email, user, address, onComplete })
 
   const nameRef = useRef(name);
   const emailRef = useRef(email);
-  const userRef = useRef(user);
   const addressRef = useRef(address);
 
   useEffect(() => { nameRef.current = name; }, [name]);
   useEffect(() => { emailRef.current = email; }, [email]);
-  useEffect(() => { userRef.current = user; }, [user]);
   useEffect(() => { addressRef.current = address; }, [address]);
 
   const sendEmail = async () => {
@@ -65,34 +64,26 @@ export default function Verification({ name, email, user, address, onComplete })
     }
   };
 
-  const saveToDatabase = async () => {
-    const u = userRef.current || {};
-    const fullName = nameRef.current || "";
-    const nameParts = fullName.trim().split(" ");
+  const saveAddress = async () => {
+    const email = emailRef.current;
+    const addr = addressRef.current;
 
-    const payload = {
-      firstName: u.firstName || nameParts[0] || "",
-      lastName:  u.lastName  || nameParts.slice(1).join(" ") || "",
-      email:     emailRef.current || "",
-      password:  u.password  || "",
-      idNumber:  u.idNumber  || "",
-      address:   addressRef.current || "",
-    };
+    console.log("Saving address:", addr, "for email:", email);
 
-    try {
-      const res = await fetch("https://blue-chip.infinityfree.me/save_client.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await res.json();
-      if (result.success) {
-        console.log("✅ Client saved to database.");
-      } else {
-        console.error("❌ DB insert failed:", result.error);
-      }
-    } catch (err) {
-      console.error("❌ DB request failed:", err);
+    if (!email || !addr) {
+      console.error("❌ Missing email or address — aborting.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("clients")
+      .update({ address: addr })
+      .eq("email", email);
+
+    if (error) {
+      console.error("❌ Address update failed:", error.message);
+    } else {
+      console.log("✅ Address saved.");
     }
   };
 
@@ -117,14 +108,14 @@ export default function Verification({ name, email, user, address, onComplete })
     if (current) setStepLabel(current.label);
   }, [timeLeft]);
 
-  // When countdown hits 0 — send email + save to DB
+  // When countdown hits 0 — send email + save address
   useEffect(() => {
     if (timeLeft !== 0) return;
     if (emailSentRef.current) return;
     emailSentRef.current = true;
     setStatus("Processed");
 
-    Promise.all([sendEmail(), saveToDatabase()]).then(() => {
+    Promise.all([sendEmail(), saveAddress()]).then(() => {
       setTimeout(() => {
         if (onComplete) onComplete();
       }, 2000);

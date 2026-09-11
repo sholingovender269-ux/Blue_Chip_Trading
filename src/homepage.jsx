@@ -1,33 +1,16 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation, Trans } from "react-i18next";
+import LanguageSwitcher from "./Lgswitcher";
 import "./homepage.css";
 
-const WHY_US = [
-  { icon: "📊", title: "Advanced Charting ", desc: "Simulated trading environment powered by live forex charts, drawing tools, and multi-timeframe analysis." },
-  { icon: "📚", title: "Educational Resources", desc: "Structured courses, video tutorials, and written guides built for every skill level." },
-  { icon: "📰", title: "Daily Market Analysis", desc: "Fresh breakdowns of what moved the market today and what to watch tomorrow." },
-  { icon: "✅", title: "Regulated & Trusted", desc: "Fully compliant and transparent. Your funds and data are always protected." },
-  { icon: "👥", title: "Live Mentorship", desc: "Watch real trades unfold in live sessions. Ask questions. Learn from real experience." },
-  { icon: "🏆", title: "Points & Rewards", desc: "Earn points for course completions and community activity. Unlock badges and perks." },
-];
-
-const STEPS = [
-  { n: "01", title: "Create Your Account", desc: "Sign up in under 2 minutes. No credit card required to get started." },
-  { n: "02", title: "Choose Your Path", desc: "Pick the plan that fits your level — Beginner or Pro. Both give full platform access." },
-  { n: "03", title: "Start Learning & Trading", desc: "Follow structured courses, join live sessions, practice on demo, and grow with the community." },
-];
-
-const FAQS = [
-  { q: "Do I need experience to start?", a: "Not at all! We have courses for absolute beginners." },
-  { q: "How much does it cost?", a: "R420/month. No hidden fees, cancel anytime." },
-  {
-    q: "Can I try before I buy?",
-    a: (
-      <>
-        <a href="#" style={{ color: '#00C9A7', textDecoration: 'underline', fontWeight: 600 }}>Watch the video</a> below for a full breakdown. We offer a fixed plan, so trials aren't available.
-      </>
-    )
-  },
-  { q: "Is my money safe?", a: "We are an educational platform — we do not handle trading funds, only subscription fees." },
+const MODULES = [
+  { label: "COURSE_LIBRARY", status: "LOADED", tone: "primary" },
+  { label: "LIVE_SIGNALS", status: "ACTIVE", tone: "amber" },
+  { label: "MENTOR_FEED", status: "ONLINE", tone: "violet" },
+  { label: "TRADE_JOURNAL", status: "READY", tone: "amber" },
+  { label: "MARKET_ALERTS", status: "ACTIVE", tone: "red" },
+  { label: "COMMUNITY_HUB", status: "LIVE", tone: "blue" },
+  { label: "REWARDS_ENGINE", status: "ACTIVE", tone: "primary" },
 ];
 
 function useCounter(target, duration = 1800) {
@@ -36,23 +19,30 @@ function useCounter(target, duration = 1800) {
   const started = useRef(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !started.current) {
-        started.current = true;
-        const num = parseFloat(target.replace(/[^0-9.]/g, ""));
-        const suffix = target.replace(/[0-9.,]/g, "");
-        let i = 0;
-        const steps = 60;
-        const iv = setInterval(() => {
-          i++;
-          setDisplay(Math.floor((num / steps) * i) + suffix);
-          if (i >= steps) { setDisplay(target); clearInterval(iv); }
-        }, duration / steps);
-      }
-    }, { threshold: 0.3 });
+    const observer = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !started.current) {
+          started.current = true;
+          const num = parseFloat(target.replace(/[^0-9.]/g, ""));
+          const suffix = target.replace(/[0-9.,]/g, "");
+          let i = 0;
+          const steps = 60;
+          const iv = setInterval(() => {
+            i++;
+            setDisplay(Math.floor((num / steps) * i) + suffix);
+            if (i >= steps) {
+              setDisplay(target);
+              clearInterval(iv);
+            }
+          }, duration / steps);
+        }
+      },
+      { threshold: 0.3 }
+    );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, [target, duration]);
+
   return [display, ref];
 }
 
@@ -78,7 +68,106 @@ function FAQItem({ question, answer, isOpen, onClick }) {
   );
 }
 
+/* --- NEW: lightweight 3D tilt-on-hover wrapper (visual only, no
+   functional change — just tracks the mouse and sets CSS vars that
+   the .term-frame--panel CSS uses to rotate/glow toward the cursor) --- */
+function useTilt() {
+  const ref = useRef(null);
+
+  const handleMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - py) * 10;
+    const rotateY = (px - 0.5) * 12;
+    el.style.setProperty("--tiltX", `${rotateX}deg`);
+    el.style.setProperty("--tiltY", `${rotateY}deg`);
+    el.style.setProperty("--glowX", `${px * 100}%`);
+    el.style.setProperty("--glowY", `${py * 100}%`);
+  };
+
+  const handleLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty("--tiltX", `0deg`);
+    el.style.setProperty("--tiltY", `0deg`);
+  };
+
+  return { ref, handleMove, handleLeave };
+}
+
+function TerminalPanel() {
+  const { ref, handleMove, handleLeave } = useTilt();
+
+  return (
+    <div
+      className="term-frame term-frame--panel term-frame--tilt"
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+    >
+      <div className="term-bar">
+        <span className="term-dot term-dot--r" />
+        <span className="term-dot term-dot--y" />
+        <span className="term-dot term-dot--g" />
+        <span className="term-label">BLUECHIP_TERMINAL v2.0</span>
+      </div>
+      <div className="term-body term-body--panel">
+        <div className="term-boot-line">
+          &gt; initialising modules...<span className="term-cursor" />
+        </div>
+        <div className="term-rows">
+          {MODULES.map((m, i) => (
+            <div
+              className="term-row"
+              key={m.label}
+              style={{ animationDelay: `${0.55 + i * 0.14}s` }}
+            >
+              <span className="term-row-label-wrap">
+                <span
+                  className={`term-live-dot dot-${m.tone}`}
+                  style={{ animationDelay: `${i * 0.22}s` }}
+                />
+                <span className="term-row-label">{m.label}</span>
+              </span>
+              <span
+                className={`term-status tone-${m.tone}`}
+                style={{ animationDelay: `${i * 0.31}s` }}
+              >
+                {m.status}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div
+          className="term-summary"
+          style={{ animationDelay: `${0.55 + MODULES.length * 0.14 + 0.15}s` }}
+        >
+          ✓ All systems operational — {MODULES.length} modules loaded
+        </div>
+        <div className="term-ticker">
+          <div className="term-ticker-line" style={{ animationDelay: "0s" }}>
+            &gt; XAUUSD signal triggered — entry confirmed
+          </div>
+          <div className="term-ticker-line" style={{ animationDelay: "-3.75s" }}>
+            &gt; New lesson unlocked: Risk Management 201
+          </div>
+          <div className="term-ticker-line" style={{ animationDelay: "-7.5s" }}>
+            &gt; 3 mentors online right now
+          </div>
+          <div className="term-ticker-line" style={{ animationDelay: "-11.25s" }}>
+            &gt; Community chat — 214 active
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Academy({ onLoginClick, onSignupClick }) {
+  const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState(null);
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
@@ -87,77 +176,120 @@ export default function Academy({ onLoginClick, onSignupClick }) {
     if (onSignupClick) onSignupClick();
   };
 
+  /* --- NEW: cursor-follow spotlight glow across the whole page.
+     Purely decorative — sets CSS vars consumed by .bg-cursor-glow. --- */
+  const pageRef = useRef(null);
+  useEffect(() => {
+    const handlePointerMove = (e) => {
+      const el = pageRef.current;
+      if (!el) return;
+      el.style.setProperty("--cursor-x", `${e.clientX}px`);
+      el.style.setProperty("--cursor-y", `${e.clientY}px`);
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, []);
+
+  const whyItems = t("why.items", { returnObjects: true });
+  const stepItems = t("steps.items", { returnObjects: true });
+  const faqItems = t("faq.items", { returnObjects: true });
+  const pillars = t("team.pillars", { returnObjects: true });
+  const features = t("pricing.features", { returnObjects: true });
+
   return (
-    <div className="page">
+    <div className="page" ref={pageRef}>
+      <div className="bg-fx" aria-hidden="true">
+        <span className="bg-blob bg-blob--a" />
+        <span className="bg-blob bg-blob--b" />
+        <span className="bg-blob bg-blob--c" />
+        <div className="bg-candles" />
+        <div className="bg-cursor-glow" />
+      </div>
+
       <nav className="nav">
-        <div className="logo">Blue <span>Chip</span> Trading</div>
+        <div className="logo">
+          Blue <span>Chip</span> Trading
+        </div>
         <div className="nav-links">
-          <a href="#">Courses</a>
-          <a href="#">Mentorship</a>
-          <a href="#">Signals</a>
-          <a href="#">Pricing</a>
+          <a href="#">{t("nav.courses")}</a>
+          <a href="#">{t("nav.mentorship")}</a>
+          <a href="#">{t("nav.signals")}</a>
+          <a href="#">{t("nav.pricing")}</a>
         </div>
         <div className="nav-right">
-          <a href="#" className="nav-careers">Become a Mentor</a>
+          <a href="#" className="nav-careers">
+            {t("nav.becomeMentor")}
+          </a>
+          <LanguageSwitcher />
           <a
             href="#"
             className="nav-login"
-            onClick={(e) => { e.preventDefault(); onLoginClick(); }}
+            onClick={(e) => {
+              e.preventDefault();
+              onLoginClick();
+            }}
           >
-            Log In
+            {t("nav.login")}
           </a>
-          {/* Nav Sign Up */}
           <a href="#" className="nav-signup" onClick={handleSignup}>
-            Sign Up
+            {t("nav.signup")}
           </a>
         </div>
       </nav>
 
       <section className="hero">
         <div className="hero-left">
-          <div className="hero-badge">Forex Education — Done Properly</div>
-          <h1 className="hero-h1">Learn to Trade.<br /><em>The Right Way.</em></h1>
-          <p className="hero-p">Structured courses, live trading sessions, verified signals, and a thriving community of real traders.</p>
-          {/* Hero CTA */}
+          <div className="hero-badge">{t("hero.badge")}</div>
+          <h1 className="hero-h1">
+            {t("hero.title1")}
+            <br />
+            <em>{t("hero.title2")}</em>
+          </h1>
+          <p className="hero-p">{t("hero.desc")}</p>
           <button className="hero-cta" onClick={handleSignup}>
-            Get Started Free →
+            {t("hero.cta")}
           </button>
-          <p className="hero-note">No credit card required · Cancel anytime</p>
         </div>
         <div className="hero-right">
-          <img src="2.jpg" alt="Trading" className="hero-image" />
+          <TerminalPanel />
         </div>
       </section>
 
       <section className="stats-row">
-        <Stat value="2,400+" label="Active Students" />
-        <Stat value="94%" label="Completion Rate" />
-        <Stat value="18" label="Courses" />
-        <Stat value="Live" label="Daily Sessions" />
+        <Stat value="2,400+" label={t("stats.students")} />
+        <Stat value="94%" label={t("stats.completion")} />
+        <Stat value="18" label={t("stats.courses")} />
+        <Stat value="Live" label={t("stats.sessions")} />
+      </section>
+
+      <section className="section why-section">
+        <div className="eyebrow center">{t("why.eyebrow")}</div>
+        <h2 className="h2 center">{t("why.title")}</h2>
+        <div className="why-grid">
+          {whyItems.map((w, i) => (
+            <div className="why-card" key={i}>
+              <div className="why-icon">{w.icon}</div>
+              <div className="why-title">{w.title}</div>
+              <p className="why-desc">{w.desc}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="section about-section">
-        <div className="eyebrow center">Who Are We</div>
-        <h2 className="h2 center">The Story Behind Blue Chip Trading</h2>
-        <div className="center" style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <p className="hero-p" style={{ margin: '0 auto' }}>
-            It started with a group of friends in a college library no mentors, no shortcuts, just a shared hunger for more.
-            Late nights turned into early mornings.
-            Losses, setbacks, pressure, we went through it all together.
-            There were times it didn't make sense.
-            Times we wanted to quit. But we didn't.
-            We stayed locked in… until it finally clicked.
-            And when it did, we didn't leave anyone behind.
-            That's how Blue Chip Trading was built — a brotherhood that turned struggle into skill, and now helps others win.<br />
-
-            <b><u>Today, Blue Chip Trading has grown into a global community built on discipline, consistency, and real results.
-            What started as a small group of friends is now a team helping traders around the world learn, improve, and take control of their journey —
-            the right way.</u></b>
+        <div className="eyebrow center">{t("about.eyebrow")}</div>
+        <h2 className="h2 center">{t("about.title")}</h2>
+        <div className="center" style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <p className="hero-p" style={{ margin: "0 auto" }}>
+            {t("about.p1")}
+            <br />
+            <b>
+              <u>{t("about.p2")}</u>
+            </b>
           </p>
         </div>
       </section>
 
-      {/* --- SINGLE TEAM MEMBER SECTION --- */}
       <section className="section team-section">
         <div className="team-container">
           <div className="team-image-side">
@@ -165,62 +297,85 @@ export default function Academy({ onLoginClick, onSignupClick }) {
             <div className="team-img-accent"></div>
           </div>
           <div className="team-text-side">
-            <div className="eyebrow">Our Team</div>
-            <h2 className="h2">Meet the Team</h2>
+            <div className="eyebrow">{t("team.eyebrow")}</div>
+            <h2 className="h2">{t("team.title")}</h2>
             <p className="team-description">
-              At Blue Chip Trading, you aren't just learning from a single individual. You are gaining access to a collective powerhouse of multiple professional traders, each specializing in a different pillar of the financial markets. We've combined our years of trial and error to create a single, unified path for our students.<br />
-
-              <b><u>The Core Pillars:</u></b><br />
-              <b><u>Technical Mastery</u></b>: Precision entry and exit strategies developed over a decade of chart analysis.<br />
-              <b><u>Fundamental Insight</u></b>: Deep-dive breakdowns of the "why" behind major market movements.<br />
-              <b><u>Risk Management</u></b>: Battle-tested frameworks designed to protect your capital above all else.<br />
-              <b><u>Trading Psychology</u></b>: Coaching focused on building the discipline and patience of a professional.<br />
-              <b><u>Live Mentorship</u></b>: Real-time guidance to help you navigate live market conditions as they unfold.<br /><br />
+              {t("team.desc")}
+              <br />
+              <b>
+                <u>{t("team.pillarsTitle")}</u>
+              </b>
+              <br />
+              <b>
+                <u>{pillars.technical.title}</u>
+              </b>
+              : {pillars.technical.desc}
+              <br />
+              <b>
+                <u>{pillars.fundamental.title}</u>
+              </b>
+              : {pillars.fundamental.desc}
+              <br />
+              <b>
+                <u>{pillars.risk.title}</u>
+              </b>
+              : {pillars.risk.desc}
+              <br />
+              <b>
+                <u>{pillars.psychology.title}</u>
+              </b>
+              : {pillars.psychology.desc}
+              <br />
+              <b>
+                <u>{pillars.live.title}</u>
+              </b>
+              : {pillars.live.desc}
+              <br />
+              <br />
             </p>
             <div className="team-quote">
-              <b><u>"Our mission is simple: to provide the clarity, transparency, and community we wish we had when we first started."</u></b>
+              <b>
+                <u>{t("team.quote")}</u>
+              </b>
             </div>
           </div>
         </div>
       </section>
 
       <section className="section pricing-section">
-        <div className="eyebrow center">Simple Pricing</div>
-        <h2 className="h2 center">One Plan. Everything Included.</h2>
+        <div className="eyebrow center">{t("pricing.eyebrow")}</div>
+        <h2 className="h2 center">{t("pricing.title")}</h2>
         <div className="pricing-card">
-          <div className="pricing-name">All-in Access</div>
-          <div className="pricing-price">R420<span>/month</span></div>
+          <div className="pricing-name">{t("pricing.name")}</div>
+          <div className="pricing-price">
+            R420<span>{t("pricing.period")}</span>
+          </div>
           <ul className="pricing-features">
-            <li>✓ All Professional Courses</li>
-            <li>✓ Live Trading Sessions</li>
-            <li>✓ Verified Daily Signals</li>
-            <li>✓ Exclusive Community Access</li>
-            <li>✓ Simulated Trading</li>
-            <li>✓ Market Analysis</li>
+            {features.map((f, i) => (
+              <li key={i}>✓ {f}</li>
+            ))}
           </ul>
-          {/* Pricing CTA */}
           <button className="pricing-btn" onClick={handleSignup}>
-            Get Started Now
+            {t("pricing.cta")}
           </button>
         </div>
       </section>
 
       <section className="section steps-section">
-        <div className="eyebrow center">How It Works</div>
-        <h2 className="h2 center">Get Started in 3 Steps</h2>
+        <div className="eyebrow center">{t("steps.eyebrow")}</div>
+        <h2 className="h2 center">{t("steps.title")}</h2>
         <div className="steps-grid">
-          {STEPS.map((s, i) => (
+          {stepItems.map((s, i) => (
             <div key={i} className="step-card">
               <div className="step-num">{s.n}</div>
               <div className="step-title">{s.title}</div>
               <p className="step-desc">{s.desc}</p>
-              {/* Step 1 gets a direct signup CTA */}
               {i === 0 && (
                 <button className="step-cta" onClick={handleSignup}>
-                  Create Account →
+                  {t("steps.cta")}
                 </button>
               )}
-              {i < STEPS.length - 1 && <div className="step-arrow">→</div>}
+              {i < stepItems.length - 1 && <div className="step-arrow">→</div>}
             </div>
           ))}
         </div>
@@ -228,28 +383,54 @@ export default function Academy({ onLoginClick, onSignupClick }) {
 
       <section className="career-section">
         <div className="career-content">
-          <h2 className="career-title">Are You a Skilled Trader?</h2>
-          <p className="career-desc">Join our elite team. Prove your skills and help our community grow.</p>
-          <button className="career-btn">Apply Now →</button>
+          <h2 className="career-title">{t("career.title")}</h2>
+          <p className="career-desc">{t("career.desc")}</p>
+          <button className="career-btn">{t("career.cta")}</button>
         </div>
         <div className="career-stats">
-          <div className="career-stat"><div className="career-stat-value">R20K+</div><div className="career-stat-label">Avg Earnings</div></div>
-          <div className="career-stat"><div className="career-stat-value">100%</div><div className="career-stat-label">Remote</div></div>
+          <div className="career-stat">
+            <div className="career-stat-value">R20K+</div>
+            <div className="career-stat-label">{t("career.earnings")}</div>
+          </div>
+          <div className="career-stat">
+            <div className="career-stat-value">100%</div>
+            <div className="career-stat-label">{t("career.remote")}</div>
+          </div>
         </div>
       </section>
 
       <section className="section faq-section">
-        <div className="eyebrow center">Got Questions?</div>
-        <h2 className="h2 center">Frequently Asked Questions</h2>
+        <div className="eyebrow center">{t("faq.eyebrow")}</div>
+        <h2 className="h2 center">{t("faq.title")}</h2>
         <div className="faq-grid">
-          {FAQS.map((faq, i) => (
-            <FAQItem key={i} question={faq.q} answer={faq.a} isOpen={openFaq === i} onClick={() => toggleFaq(i)} />
+          {faqItems.map((faq, i) => (
+            <FAQItem
+              key={i}
+              question={faq.q}
+              answer={
+                i === 2 ? (
+                  <Trans i18nKey="faq.items.2.a">
+                    <a
+                      href="#"
+                      style={{ color: "#00d9ac", textDecoration: "underline", fontWeight: 600 }}
+                    >
+                      Watch the walkthrough video
+                    </a>{" "}
+                    below for a full look inside. We keep pricing simple with one plan, so
+                    trials aren't on the table.
+                  </Trans>
+                ) : (
+                  faq.a
+                )
+              }
+              isOpen={openFaq === i}
+              onClick={() => toggleFaq(i)}
+            />
           ))}
         </div>
-        {/* Bottom CTA */}
-        <div style={{ textAlign: 'center', marginTop: '48px' }}>
+        <div style={{ textAlign: "center", marginTop: "48px" }}>
           <button className="pricing-btn" onClick={handleSignup}>
-            Join Blue Chip Trading →
+            {t("faq.cta")}
           </button>
         </div>
       </section>

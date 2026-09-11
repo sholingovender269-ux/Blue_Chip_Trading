@@ -1,0 +1,331 @@
+.signals-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 56px 56px;
+  position: relative;
+  z-index: 1;
+}
+
+.signals-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.signals-header h1 {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.disclaimer-banner {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange-border);
+  color: var(--orange);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 28px;
+}
+
+.session-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 28px;
+}
+
+.session-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-mid);
+  padding: 10px 22px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.session-tab:hover {
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.session-tab.active {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  box-shadow: inset 0 0 0 1px var(--cyan-border), 0 0 14px rgba(34, 211, 238, 0.15);
+}
+
+.signals-status {
+  font-family: var(--font-mono);
+  color: var(--text-mid);
+  font-size: 0.9rem;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.signals-status.signals-error {
+  color: var(--down);
+}
+
+.signal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.signal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.signal-card:hover {
+  border-color: var(--border-hover);
+}
+
+.signal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.signal-type-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--purple);
+  background: var(--purple-dim);
+  border: 1px solid var(--purple-border);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.signal-direction {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.signal-direction.buy { color: var(--up); }
+.signal-direction.sell { color: var(--down); }
+
+.signal-pair {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+}
+
+.signal-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.signal-level {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.signal-level-label {
+  color: var(--text-muted);
+}
+
+.signal-level-value {
+  color: var(--text-bright);
+  font-weight: 600;
+}
+
+.signal-level-value.sl { color: var(--down); }
+.signal-level-value.tp { color: var(--up); }
+
+.signal-confidence {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.signal-confidence.high { color: var(--up); }
+.signal-confidence.medium { color: var(--orange); }
+.signal-confidence.low { color: var(--down); }
+
+.signal-rationale {
+  font-size: 0.85rem;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+/* ── Economic Calendar (NFP / CPI) ─────────────────────────── */
+
+.econ-calendar {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin: 0 0 24px;
+}
+
+.econ-calendar-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.econ-calendar-header h2 {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: var(--text-bright);
+}
+
+.econ-calendar-header h2::before {
+  content: "◆ ";
+  color: var(--orange);
+  font-size: 0.7rem;
+}
+
+.econ-calendar-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.econ-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.econ-event {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 15px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-left: 2px solid transparent;
+  border-radius: 10px;
+  transition: all 0.18s;
+}
+
+.econ-event:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-hover);
+}
+
+.econ-event-soon {
+  border-left-color: var(--orange);
+  background: var(--orange-dim);
+}
+
+.econ-badge {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.econ-badge-nfp { background: var(--purple-dim); color: var(--purple); }
+.econ-badge-cpi { background: var(--cyan-dim); color: var(--cyan); }
+
+.econ-event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.econ-event-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-bright);
+}
+
+.econ-event-ref {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.econ-event-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  text-align: right;
+}
+
+.econ-event-day {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+}
+
+.econ-event-time {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.econ-countdown {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-mid);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.econ-countdown.soon {
+  color: var(--orange);
+  background: var(--orange-dim);
+}
+
+@media (max-width: 700px) {
+  .econ-event {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 8px;
+  }
+  .econ-event-date { grid-column: 2; align-items: flex-start; text-align: left; }
+  .econ-countdown { grid-column: 1 / -1; justify-self: start; }
+}

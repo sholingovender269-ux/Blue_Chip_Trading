@@ -7,15 +7,28 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
+    "build:android": "vite build --mode android",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
     "@emailjs/browser": "^4.4.1",
+    "@livekit/components-react": "^2.9.24",
+    "@livekit/components-styles": "^1.2.0",
+    "@supabase/supabase-js": "^2.110.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "i18next": "^26.3.6",
+    "livekit-client": "^2.21.0",
+    "livekit-server-sdk": "^2.17.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "react-i18next": "^17.0.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

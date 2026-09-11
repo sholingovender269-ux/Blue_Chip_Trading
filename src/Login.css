@@ -186,7 +186,7 @@
    ----------------------------------------------------------- */
 .login-options {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     font-size: 0.9rem;
     margin-top: 5px;
@@ -209,15 +209,38 @@
     cursor: pointer;
 }
 
+/* forgot-link is a <button>, not an <a> — reset all button chrome first so
+   it doesn't inherit default border/background/font, then style it to
+   read clearly as a link-style action within the dark card. */
 .forgot-link {
+    background: none;
+    border: none;
+    padding: 4px 0;
+    margin: 0;
+    font: inherit;
+    font-size: 0.92rem;
     color: var(--text-muted);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
+    text-decoration: underline;
+    text-decoration-color: rgba(148, 168, 161, 0.35);
+    text-underline-offset: 3px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.3s, text-decoration-color 0.3s;
 }
 
 .forgot-link:hover {
     color: var(--primary);
+    text-decoration-color: var(--primary);
+}
+
+.forgot-link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 3px;
+}
+
+.forgot-link:active {
+    color: var(--primary-hover);
 }
 
 /* -----------------------------------------------------------
@@ -254,6 +277,13 @@
     box-shadow: 0 5px 15px rgba(0, 201, 167, 0.2);
 }
 
+.login-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 /* Add a kinetic 'sweep' light on hover */
 .login-btn::before {
     content: "";
@@ -271,6 +301,20 @@
     color: #ff5e5e;
     background: rgba(255, 94, 94, 0.08);
     border: 1px solid rgba(255, 94, 94, 0.2);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+/* Success state — same shape as error-message, teal instead of red, used
+   by the forgot/reset password pages to confirm an email was sent or a
+   password was updated. */
+.success-message {
+    color: var(--primary);
+    background: rgba(0, 201, 167, 0.08);
+    border: 1px solid rgba(0, 201, 167, 0.2);
     padding: 12px;
     border-radius: 8px;
     font-size: 0.9rem;
