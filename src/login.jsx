@@ -19,7 +19,42 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
     setLoading(true);
 
     try {
-      // Step 1: Sign in with Supabase Auth (all roles, including admin)
+      // MENTORS: they are not Supabase Auth users. Their (temporary) password
+      // is checked on the server by the mentor_login() SQL function.
+      if (role === "mentor") {
+        const { data: mentorData, error: mentorError } = await supabase.rpc(
+          "mentor_login",
+          { p_email: email.trim(), p_password: password }
+        );
+
+        if (mentorError) {
+          console.error("Mentor login error:", mentorError);
+          setError("Could not sign in. Please try again.");
+          return;
+        }
+
+        if (!mentorData) {
+          setError("Incorrect email or password for a mentor account.");
+          return;
+        }
+
+        const user = {
+          id: mentorData.id,
+          firstName: mentorData.first_name,
+          lastName: mentorData.last_name,
+          name: `${mentorData.first_name} ${mentorData.last_name || ""}`.trim(),
+          email: mentorData.email,
+          tradingStyle: mentorData.trading_style,
+          mustChangePassword: mentorData.must_change_password,
+          role: "mentor",
+        };
+
+        localStorage.setItem("bct_user", JSON.stringify(user));
+        if (onLogin) onLogin(user); // App.jsx sends mentors to the mentor portal
+        return;
+      }
+
+      // CLIENTS + ADMINS: Step 1 - sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -60,7 +95,7 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
         return;
       }
 
-      // Step 2 (client/mentor): look them up in the clients table
+      // Step 2 (client): look them up in the clients table
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("*")
@@ -79,7 +114,7 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
         name: `${clientData.first_name} ${clientData.last_name}`,
         email: clientData.email,
         idNumber: clientData.id_number,
-        role,
+        role: "client",
       };
 
       localStorage.setItem("bct_user", JSON.stringify(user));

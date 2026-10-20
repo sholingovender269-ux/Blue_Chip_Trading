@@ -1,0 +1,114 @@
+/* =========================================
+   MENTOR RESET (mReset.css) PAGE
+   Uses the same palette as Mdashboard.css
+========================================= */
+
+.reset-wrap {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+}
+
+.reset-heading {
+    margin-bottom: 28px;
+}
+
+.reset-sub {
+    margin: 10px 0 0;
+    color: #888b99;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.reset-card {
+    background: #0d0f12;
+    border: 1px solid #24262b;
+    border-radius: 13px;
+    padding: 28px;
+}
+
+.reset-input {
+    display: block;
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    margin-bottom: 14px;
+
+    background: #050607;
+    color: #e9e9ed;
+
+    border: 1px solid #222329;
+    border-radius: 8px;
+
+    font-family: "Courier New", Courier, monospace;
+    font-size: 13px;
+
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.reset-input::placeholder {
+    color: #5f616c;
+}
+
+.reset-input:focus {
+    border-color: #604690;
+}
+
+.reset-error,
+.reset-success {
+    margin: 0 0 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+}
+
+.reset-error {
+    color: #ff6b6b;
+}
+
+.reset-success {
+    color: #4ade80;
+}
+
+.reset-button {
+    width: 100%;
+    height: 46px;
+    margin-top: 6px;
+
+    color: #b99bff;
+    background: #15111c;
+
+    border: 1px solid #513879;
+    border-radius: 8px;
+
+    font-family: "Courier New", Courier, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.reset-button:hover:not(:disabled) {
+    background: #21172d;
+    border-color: #8060bd;
+}
+
+.reset-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Nav links locked during the forced first-login reset */
+.nav-locked {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+@media (max-width: 600px) {
+    .reset-card {
+        padding: 20px;
+    }
+}

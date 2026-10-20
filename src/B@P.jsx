@@ -7,7 +7,7 @@ import "./B@P.css";
 // so these plain string paths resolve correctly in both places.
 const base = import.meta.env.BASE_URL;
 
-export default function BrokerCards() {
+export default function BrokerCards({ user, onApplyMentor }) {
   return (
     <div className="broker-cards-page">
       <div className="content">
@@ -217,6 +217,29 @@ export default function BrokerCards() {
             </a>
           </div>
         </div>
+
+        {onApplyMentor && (
+          <>
+            <div className="section-label">Become a mentor</div>
+            <div className="card-grid">
+              <div className="card">
+                <p className="card-desc">
+                  Share your trading knowledge with the Blue Chip community.
+                  Apply to become a mentor and our team will review your
+                  application.
+                </p>
+                <button
+                  type="button"
+                  className="visit-btn"
+                  onClick={onApplyMentor}
+                  style={{ cursor: "pointer", border: "none" }}
+                >
+                  Apply Now <i className="ti ti-arrow-right" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

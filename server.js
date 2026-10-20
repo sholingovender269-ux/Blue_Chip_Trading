@@ -5,7 +5,6 @@ import { AccessToken } from 'livekit-server-sdk';
 const app = express();
 app.use(cors());
 
-// 🔴 PASTE YOUR REAL VALUES HERE
 const API_KEY = 'APIMM5Kapzo92fo';
 const API_SECRET = 'ZYId4S5gbwQSBA2KyOrYolJGXiVvOpsWwcE3YgvV28I';
 

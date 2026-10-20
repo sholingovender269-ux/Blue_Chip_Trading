@@ -1,0 +1,199 @@
+.admin-trades-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.admin-trades-page .stat-card-value.positive { color: #22c55e; }
+.admin-trades-page .stat-card-value.negative { color: #ef4444; }
+
+.trades-card {
+  padding: 20px;
+}
+
+.trades-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.trades-header h2 {
+  margin: 0;
+}
+
+.trades-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.trades-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.trades-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.trades-error {
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-size: 0.85rem;
+}
+
+.trades-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trades-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 1100px;
+}
+
+.trades-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trades-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.trades-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.trades-table .mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.trades-table .small {
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
+.trades-table .muted {
+  opacity: 0.55;
+  font-size: 0.75rem;
+}
+
+.trades-table .positive { color: #22c55e; }
+.trades-table .negative { color: #ef4444; }
+
+.trades-empty {
+  text-align: center;
+  padding: 24px 12px !important;
+  opacity: 0.6;
+  white-space: normal !important;
+}
+
+.status-pill, .side-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-open {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.status-closed {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
+.side-buy {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.side-sell {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.trades-close-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.trades-close-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.trades-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.trades-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.trades-page-controls button {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.trades-page-controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

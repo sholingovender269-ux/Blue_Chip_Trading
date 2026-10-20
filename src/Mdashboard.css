@@ -1,0 +1,610 @@
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background: #050607;
+    color: #e9e9ed;
+
+    font-family:
+        "Courier New",
+        Courier,
+        monospace;
+
+    min-height: 100vh;
+
+    /* Prevent horizontal overflow */
+    overflow-x: hidden;
+}
+
+/* =========================================
+   NAVIGATION BAR
+========================================= */
+
+.navbar {
+    height: 72px;
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 48px;
+
+    background: rgba(5, 6, 7, 0.96);
+    border-bottom: 1px solid #1d1e22;
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+
+/* =========================================
+   LOGO
+========================================= */
+
+.logo {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 2px;
+
+    color: #f4f4f7;
+    white-space: nowrap;
+}
+
+.logo span {
+    color: #a98aff;
+}
+
+
+/* =========================================
+   NAVIGATION LINKS
+========================================= */
+
+.nav-links {
+    display: flex;
+    align-items: center;
+
+    background: #0b0b0f;
+    border: 1px solid #222329;
+    border-radius: 12px;
+
+    padding: 5px;
+    gap: 6px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+
+    height: 42px;
+    padding: 0 20px;
+
+    text-decoration: none;
+    color: #8c8d97;
+
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 1.5px;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    transition: 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #e9e9ed;
+}
+
+.nav-link.active {
+    color: #b597ff;
+    background: #1b1530;
+    border-color: #3b3470;
+}
+
+
+/* =========================================
+   GO LIVE NAV BUTTON
+========================================= */
+
+.go-live-nav {
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 0 24px;
+    margin-left: 4px;
+
+    text-decoration: none;
+    color: #ffffff;
+
+    background: #121217;
+    border: 1px solid #292a31;
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+
+    transition: 0.2s ease;
+}
+
+.go-live-nav:hover {
+    background: #181820;
+    border-color: #3b3470;
+}
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
+.main {
+    width: 100%;
+    max-width: none;
+
+    margin: 0;
+
+    padding: 48px 48px 90px;
+
+    /* Prevent children from escaping */
+    overflow: hidden;
+}
+
+
+/* =========================================
+   WELCOME SECTION
+========================================= */
+
+.welcome {
+    display: center;
+
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 72px;
+}
+
+.label {
+    margin: 0 0 9px;
+
+    color: #777987;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 2px;
+}
+
+.welcome h1 {
+    margin: 0;
+
+    color: #f0f0f2;
+
+    font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+
+    font-size: 43px;
+    font-weight: 600;
+
+    letter-spacing: -1.5px;
+}
+
+.welcome h1::first-letter {
+    color: #ffffff;
+}
+
+.welcome-text {
+    margin: 10px 0 0;
+
+    color: #888b99;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 16px;
+}
+
+
+/* =========================================
+   MAIN GO LIVE BUTTON
+========================================= */
+
+.main-live-button {
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    padding: 11px 20px;
+
+    text-decoration: none;
+
+    color: #b99bff;
+
+    background: #0b090e;
+
+    border: 1px solid #513879;
+    border-radius: 20px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+
+    box-shadow:
+        0 0 15px rgba(143, 105, 218, 0.15);
+
+    transition: 0.2s ease;
+}
+
+.main-live-button:hover {
+    background: #15101c;
+
+    border-color: #8b65d1;
+
+    box-shadow:
+        0 0 25px rgba(143, 105, 218, 0.25);
+}
+
+
+/* =========================================
+   MENTOR TOOLS SECTION
+========================================= */
+
+.section {
+    width: 100%;
+
+    margin-left: 0;
+    margin-bottom: 0;
+}
+
+.section-heading {
+    margin-bottom: 50px;
+}
+
+.section-heading .label {
+    margin-bottom: 7px;
+}
+
+.section-heading h2 {
+    margin: 0;
+
+    color: #ededee;
+
+    font-family:
+        "Courier New",
+        Courier,
+        monospace;
+
+    font-size: 16px;
+    font-weight: 700;
+
+    letter-spacing: 1.5px;
+
+    text-transform: uppercase;
+}
+
+
+/* =========================================
+   DASHBOARD CARDS
+========================================= */
+
+.cards {
+    width: 100%;
+
+    display: grid;
+
+    /* Changed from fixed 340px columns */
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 14px;
+}
+
+
+/* =========================================
+   INDIVIDUAL DASHBOARD CARD
+========================================= */
+
+.dashboard-card {
+    position: relative;
+
+    width: 100%;
+    min-width: 0;
+
+    min-height: 175px;
+
+    padding: 23px;
+
+    display: block;
+
+    text-decoration: none;
+
+    color: #eeeeef;
+
+    background: #0d0f12;
+
+    border: 1px solid #24262b;
+    border-radius: 13px;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+    background: #101216;
+
+    border-color: #604690;
+
+    transform: translateY(-3px);
+
+    box-shadow:
+        0 10px 35px rgba(0, 0, 0, 0.35),
+        0 0 18px rgba(137, 99, 211, 0.08);
+}
+
+
+/* =========================================
+   CARD ICON
+========================================= */
+
+.card-icon {
+    width: 45px;
+    height: 45px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    margin-bottom: 18px;
+
+    background: #15171c;
+
+    border: 1px solid #34363d;
+    border-radius: 10px;
+
+    font-size: 19px;
+}
+
+
+/* =========================================
+   CARD TEXT
+========================================= */
+
+.dashboard-card h3 {
+    margin: 0 0 9px;
+
+    color: #e9e9ec;
+
+    font-family:
+        "Courier New",
+        Courier,
+        monospace;
+
+    font-size: 15px;
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+}
+
+.dashboard-card p {
+    margin: 0;
+
+    max-width: 260px;
+
+    color: #777a87;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 13px;
+
+    line-height: 1.55;
+}
+
+
+/* =========================================
+   CARD ARROW
+========================================= */
+
+.arrow {
+    position: absolute;
+
+    right: 20px;
+    bottom: 18px;
+
+    color: #716b7e;
+
+    font-size: 19px;
+
+    transition:
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.dashboard-card:hover .arrow {
+    color: #b08dff;
+
+    transform: translateX(5px);
+}
+
+
+
+/* =========================================
+   MANAGE BUTTON
+========================================= */
+
+.manage-button {
+    text-decoration: none;
+
+    color: #a98aff;
+
+    background: #15111c;
+
+    border: 1px solid #49356c;
+    border-radius: 7px;
+
+    padding: 10px 17px;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    letter-spacing: 1px;
+
+    transition: 0.2s ease;
+}
+
+.manage-button:hover {
+    background: #21172d;
+
+    border-color: #8060bd;
+}
+
+
+/* =========================================
+   SCROLLBAR
+========================================= */
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #070809;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #45464b;
+
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #62566f;
+}
+
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 1250px) {
+
+    .stats {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .cards {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .nav-links {
+        gap: 0;
+    }
+
+    .nav-link {
+        padding: 0 12px;
+    }
+}
+
+
+@media (max-width: 900px) {
+
+    .navbar {
+        padding: 0 25px;
+    }
+
+    .logo {
+        font-size: 16px;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .main {
+        padding: 40px 25px;
+    }
+
+    .stats,
+    .section {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .stats {
+        grid-template-columns:
+            repeat(2, minmax(250px, 1fr));
+    }
+
+    .cards {
+        grid-template-columns:
+            repeat(2, minmax(250px, 1fr));
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .welcome {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 25px;
+
+        margin-bottom: 45px;
+    }
+
+    .welcome h1 {
+        font-size: 32px;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        width: 100%;
+    }
+
+    .dashboard-card {
+        min-height: 160px;
+    }
+
+    .session-card {
+        flex-wrap: wrap;
+    }
+
+    .manage-button {
+        width: 100%;
+
+        text-align: center;
+    }
+}

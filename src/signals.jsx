@@ -1,44 +1,145 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./landing.css";
 import "./signals.css";
 import { supabase } from "./supabaseClient";
 
-// Same OpenRouter setup as AIAssistant.jsx — same key, same endpoint, same
-// retry-on-429 pattern — so this doesn't introduce a second config to keep
-// in sync.
+// Two sections:
+// 1. AI Signal: ONE signal per session (Asia, London, New York). It is
+//    generated once per session per day, saved to Supabase, then just read by
+//    everyone else. The card shows a detailed entry zone and a LIVE status that
+//    tells the trader whether the setup is still valid right now.
+// 2. Mentor Signals: everything mentors posted in the last 24 hours.
 //
-// ⚠️ SECURITY NOTE: this key is hardcoded and shipped to the browser.
-// Anyone can pull it from dev tools / the built JS bundle and use your
-// quota. Move key usage behind a backend/serverless function when you can.
+// Sessions are decided by TIME (South African time, UTC+2, no daylight saving):
+//   Asia      02:00 - 09:00
+//   London    09:00 - 15:30
+//   New York  15:30 - 00:00
+// 00:00 - 02:00 counts as Asia (market is open, nothing else is running).
+// Change TZ_OFFSET_HOURS / SESSION_WINDOWS below if you ever need different ones.
+
 const API_KEY = "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";
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// ─────────────────────────────────────────────────────────────────────────
-// This page no longer talks to TwelveData at all. Landing.jsx is the
-// single source of truth — it fetches all pairs once, keeps the 3 majors
-// in `rawQuotes`, and passes them down as the `priceData` prop below.
-// ─────────────────────────────────────────────────────────────────────────
-
 const SESSIONS = ["Asia", "London", "New York"];
-const TRADE_TYPES = ["Scalp", "Short-Term", "Daily", "Long-Term"];
+const PRICE_WAIT_MS = 3000;
+
+const TZ_OFFSET_HOURS = 2; // Johannesburg
+const SESSION_WINDOWS = {
+  Asia: { start: 2 * 60, end: 9 * 60, startLabel: "02:00", endLabel: "09:00" },
+  London: { start: 9 * 60, end: 15 * 60 + 30, startLabel: "09:00", endLabel: "15:30" },
+  "New York": { start: 15 * 60 + 30, end: 24 * 60, startLabel: "15:30", endLabel: "00:00" },
+};
+
+// The entry zone is the ideal entry +/- this fraction of the stop distance.
+const ZONE_FRACTION = 0.25;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+// Date/time in session time (UTC+2) regardless of the visitor's own time zone.
+function localParts(date = new Date()) {
+  const d = new Date(date.getTime() + TZ_OFFSET_HOURS * 3600 * 1000);
+  return {
+    day: d.getUTCDay(), // 0 = Sun ... 6 = Sat
+    minutes: d.getUTCHours() * 60 + d.getUTCMinutes(),
+    iso: d.toISOString().slice(0, 10),
+  };
 }
 
-// fetch() with a hard timeout — plain fetch() never times out on its own,
-// so a stalled request (rate-limited API, dropped connection, etc.) would
-// leave the page stuck forever.
-async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+function todayISO() {
+  return localParts().iso; // YYYY-MM-DD in session time
+}
+
+function getCurrentSession(date = new Date()) {
+  const m = localParts(date).minutes;
+  if (m >= SESSION_WINDOWS.London.start && m < SESSION_WINDOWS.London.end) return "London";
+  if (m >= SESSION_WINDOWS["New York"].start) return "New York";
+  return "Asia"; // 00:00 - 09:00
+}
+
+// Minutes left until the current session ends.
+function minutesLeftInSession(date = new Date()) {
+  const m = localParts(date).minutes;
+  const end = SESSION_WINDOWS[getCurrentSession(date)].end;
+  return end - m;
+}
+
+function formatDuration(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+// Forex closes Friday 22:00 UTC and reopens Sunday 22:00 UTC. In session time
+// (UTC+2) that is exactly all of Saturday and Sunday.
+function isMarketClosed(date = new Date()) {
+  const day = localParts(date).day;
+  return day === 6 || day === 0;
+}
+
+// Monday 00:00 session time, shown in the visitor's own time zone.
+function nextOpenLabel(now = new Date()) {
+  const shifted = new Date(now.getTime() + TZ_OFFSET_HOURS * 3600 * 1000);
+  const addDays = shifted.getUTCDay() === 6 ? 2 : 1;
+  const open = new Date(
+    Date.UTC(
+      shifted.getUTCFullYear(),
+      shifted.getUTCMonth(),
+      shifted.getUTCDate() + addDays,
+      -TZ_OFFSET_HOURS,
+      0,
+      0
+    )
+  );
+  return open.toLocaleString("en-US", {
+    weekday: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// "Asia" and "Asian" both match the Asia tab
+const sameSession = (a, b) =>
+  String(a || "").toLowerCase().slice(0, 4) === String(b || "").toLowerCase().slice(0, 4);
+
+// Mentors post confidence as 0-100; AI signals use the text "high".
+const isMentorSignal = (s) =>
+  s.confidence !== null && s.confidence !== "" && !isNaN(Number(s.confidence));
+
+function confidenceInfo(value) {
+  const n = Number(value);
+  if (value !== null && value !== "" && !isNaN(n)) {
+    return { score: n, label: `${n}%`, level: n >= 70 ? "high" : n >= 40 ? "medium" : "low" };
+  }
+  const text = String(value || "").toLowerCase();
+  const levels = { low: 33, medium: 66, high: 100 };
+  return { score: levels[text] || 0, label: text || "—", level: text || "low" };
+}
+
+function formatPair(pair) {
+  const p = String(pair || "").toUpperCase();
+  if (!p.includes("/") && p.length === 6) return `${p.slice(0, 3)}/${p.slice(3)}`;
+  return p;
+}
+
+const normPair = (pair) => String(pair || "").replace("/", "").toUpperCase();
+const pipSize = (pair) => (normPair(pair).includes("JPY") ? 0.01 : 0.0001);
+const fmt = (pair, v) => Number(v).toFixed(normPair(pair).includes("JPY") ? 3 : 5);
+const toPips = (pair, diff) => Math.abs(diff) / pipSize(pair);
+
+const timeOf = (s) =>
+  s.created_at
+    ? new Date(s.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    : null;
+
+// fetch() with a hard timeout so a stalled request can't hang the page.
+async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (err) {
     if (err.name === "AbortError") {
-      throw new Error(`Request timed out after ${timeoutMs / 1000}s: ${url}`);
+      throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
     }
     throw err;
   } finally {
@@ -46,35 +147,273 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   }
 }
 
+// Fallback when Landing's live prices haven't arrived: daily reference rates
+// for the same 5 pairs. Free, no key. Good enough for rough levels only.
+async function fetchFallbackPrices() {
+  const res = await fetchWithTimeout(
+    "https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP,JPY,CHF,AUD",
+    {},
+    8000
+  );
+  const json = await res.json();
+  const r = json.rates;
+  if (!r) throw new Error("Couldn't load prices.");
+  const row = (pair, close) => ({ pair, close: Number(close.toFixed(pair.includes("JPY") ? 3 : 5)) });
+  return [
+    row("EUR/USD", 1 / r.EUR),
+    row("GBP/USD", 1 / r.GBP),
+    row("USD/JPY", r.JPY),
+    row("USD/CHF", r.CHF),
+    row("AUD/USD", 1 / r.AUD),
+  ];
+}
+
+async function callOpenRouter(requestBody, attempt = 1) {
+  const response = await fetchWithTimeout(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${API_KEY}`,
+      "HTTP-Referer": window.location.origin,
+      "X-Title": "Blue Chip Trading",
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  const data = await response.json();
+
+  if (response.status === 429 && attempt < 2) {
+    await sleep(1200);
+    return callOpenRouter(requestBody, attempt + 1);
+  }
+
+  return { response, data };
+}
+
+const SESSION_STYLE = {
+  Asia: "The Asia session is usually quieter and range-bound, so favour range or mean-reversion setups with tighter targets.",
+  London: "The London session is the most liquid, with strong breakouts and trends, so favour momentum or breakout setups.",
+  "New York": "The New York session is news-driven and volatile (especially around US data), so favour clean setups and be careful around news events.",
+};
+
+function buildSignalPrompt(session) {
+  return `You are a trading signals generator for a forex trading platform. You will be given the current price for several currency pairs, plus upcoming high-impact US news events (NFP, CPI, FOMC). Using ONLY that data for price levels, generate exactly ONE trade idea for the "${session}" trading session.
+
+${SESSION_STYLE[session] || ""}
+
+Choose the single highest-confidence setup across the given pairs. Use realistic stop distances (about 15-40 pips; for USD/JPY a pip is 0.01). Take profit should be at least 1.5 times the stop distance. The entry must be within about 10 pips of the given current price. If the trade would run into one of the news events, mention it briefly in the rationale.
+
+Respond with ONLY valid JSON, no markdown fences, no commentary, in this exact shape:
+
+{
+  "type": "Scalp" | "Short-Term" | "Daily",
+  "pair": "EUR/USD",
+  "direction": "buy" | "sell",
+  "entry": 1.0850,
+  "stop_loss": 1.0820,
+  "take_profit": 1.0910,
+  "confidence": "high",
+  "rationale": "One or two sentence explanation grounded in the given price data."
+}
+
+For a buy: stop_loss < entry < take_profit. For a sell: take_profit < entry < stop_loss. Entry must be close to the given price for that pair.`;
+}
+
+async function generateSessionSignal(session, prices, upcomingNews) {
+  const userPrompt = `Current price data:\n${JSON.stringify(
+    prices,
+    null,
+    2
+  )}\n\nUpcoming high-impact news events:\n${JSON.stringify(upcomingNews, null, 2)}`;
+
+  const { response, data } = await callOpenRouter({
+    model: "openai/gpt-3.5-turbo",
+    messages: [
+      { role: "system", content: buildSignalPrompt(session) },
+      { role: "user", content: userPrompt },
+    ],
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("OpenRouter rejected the API key. Create a new key at openrouter.ai/keys and paste it into API_KEY.");
+  }
+
+  if (!response.ok || data.error) {
+    throw new Error(data?.error?.message || `Request failed (${response.status})`);
+  }
+
+  const raw = data?.choices?.[0]?.message?.content || "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  let s;
+  try {
+    s = JSON.parse(cleaned);
+  } catch {
+    console.error(`Raw AI response for ${session} that failed to parse:`, raw);
+    throw new Error("The AI response wasn't valid JSON. Try again.");
+  }
+
+  const entry = Number(s.entry);
+  const sl = Number(s.stop_loss);
+  const tp = Number(s.take_profit);
+  const direction = String(s.direction || "").toLowerCase();
+  const valid =
+    direction === "buy" ? sl < entry && entry < tp : direction === "sell" ? tp < entry && entry < sl : false;
+
+  if (!s.pair || [entry, sl, tp].some(isNaN) || !valid) {
+    throw new Error("The AI returned an invalid trade setup. Try again.");
+  }
+
+  return {
+    date: todayISO(),
+    session,
+    type: s.type || "Daily",
+    pair: s.pair,
+    direction,
+    entry,
+    stop_loss: sl,
+    take_profit: tp,
+    confidence: "high",
+    rationale: s.rationale || null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Is the setup still valid? Compares the live price with the saved levels.
+//
+// Entry zone = entry +/- 25% of the stop distance. Then:
+//   in the zone ........................ ENTER   (setup is active)
+//   moved past the zone toward target .. WAIT    (don't chase, wait for pullback)
+//                                        ...or INVALID if reward:risk from here < 1:1
+//   moved past the zone toward the stop  WAIT    (wait for price to come back)
+//                                        ...or INVALID if 60%+ of the way to the stop
+//   stop level touched ................. INVALID
+//   target already reached ............. INVALID
+//   session is over .................... EXPIRED
+// ─────────────────────────────────────────────────────────────────────────
+function evaluateSetup(signal, price, isCurrent, now) {
+  const pair = signal.pair;
+  const buy = String(signal.direction).toLowerCase() === "buy";
+  const dir = buy ? 1 : -1;
+  const E = Number(signal.entry);
+  const SL = Number(signal.stop_loss);
+  const TP = Number(signal.take_profit);
+  const risk = Math.abs(E - SL);
+  const reward = Math.abs(TP - E);
+  const zone = risk * ZONE_FRACTION;
+  const zoneLow = E - zone;
+  const zoneHigh = E + zone;
+  const p = (v) => fmt(pair, v);
+  const base = { zoneLow, zoneHigh, risk, reward };
+
+  if (!isCurrent) {
+    return {
+      ...base,
+      state: "out",
+      icon: "✕",
+      title: "EXPIRED: this session has ended",
+      message: `The ${signal.session} session is over, so this setup is no longer active. Don't open new trades from it.`,
+      facts: [],
+    };
+  }
+
+  if (!price) {
+    return {
+      ...base,
+      state: "wait",
+      icon: "…",
+      title: "CHECKING: waiting for a live price",
+      message: "We can't tell yet whether the setup is still valid. This updates as soon as a price arrives.",
+      facts: [],
+    };
+  }
+
+  const P = Number(price.close);
+  const d = dir * (P - E); // + = price moved toward target, - = toward stop
+  const inZone = Math.abs(d) <= zone;
+  const pipsAway = inZone ? 0 : toPips(pair, Math.abs(d) - zone);
+  const facts = [
+    ["Live price", p(P)],
+    ["From entry zone", inZone ? "In zone" : `${pipsAway.toFixed(1)} pips`],
+    ["Session ends in", formatDuration(Math.max(minutesLeftInSession(now), 0))],
+  ];
+  const zoneText = `${p(zoneLow)} – ${p(zoneHigh)}`;
+  const side = buy ? "BUY" : "SELL";
+
+  if (d <= -risk) {
+    return {
+      ...base, facts, state: "out", icon: "✕",
+      title: "INVALID: stop loss level reached",
+      message: `Price has hit ${p(SL)}, the level where this setup fails. Don't enter. Wait for the next session's signal.`,
+    };
+  }
+
+  if (d >= reward) {
+    return {
+      ...base, facts, state: "out", icon: "✕",
+      title: "INVALID: target already reached",
+      message: `Price has already reached ${p(TP)}. The move is done, so entering now would be chasing. Wait for the next signal.`,
+    };
+  }
+
+  if (inZone) {
+    return {
+      ...base, facts, state: "enter", icon: "✓",
+      title: `VALID: price is in the entry zone, ${side} now`,
+      message: `Price is inside the entry zone (${zoneText}). The setup is active. Enter with the stop at ${p(SL)} and the target at ${p(TP)}.`,
+    };
+  }
+
+  if (d > zone) {
+    const remReward = reward - d;
+    const remRisk = risk + d;
+    if (remReward / remRisk < 1) {
+      return {
+        ...base, facts, state: "out", icon: "✕",
+        title: "INVALID: too late to enter",
+        message: `Price has run ${pipsAway.toFixed(1)} pips past the entry zone. From here the risk is bigger than the reward, so the setup no longer makes sense. Skip it.`,
+      };
+    }
+    return {
+      ...base, facts, state: "wait", icon: "!",
+      title: "WAIT: price has moved away from entry",
+      message: `Price is ${pipsAway.toFixed(1)} pips ${buy ? "above" : "below"} the entry zone. Don't chase it. The setup stays valid if price pulls back into ${zoneText} before reaching ${p(TP)}.`,
+    };
+  }
+
+  // d < -zone: price is on the wrong side of the entry zone
+  if (d <= -0.6 * risk) {
+    return {
+      ...base, facts, state: "out", icon: "✕",
+      title: "INVALID: price is too close to the stop",
+      message: `Price has moved ${pipsAway.toFixed(1)} pips against the setup and is close to ${p(SL)}. The idea is failing. Skip it.`,
+    };
+  }
+  return {
+    ...base, facts, state: "wait", icon: "!",
+    title: "WAIT: price is on the wrong side of entry",
+    message: `Price is ${pipsAway.toFixed(1)} pips ${buy ? "below" : "above"} the entry zone. Wait for it to return to ${zoneText} before entering. If it reaches ${p(SL)} the setup is cancelled.`,
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Economic calendar — NFP, CPI, and FOMC dates.
 //
-// NFP (the "Employment Situation" report) is ALWAYS the first Friday of
-// the month, published by the Bureau of Labor Statistics at 8:30 AM ET.
-// That's a fixed rule, so instead of hand-typing dates that eventually run
-// out, we compute them algorithmically — this list never goes stale.
-//
-// CPI and FOMC dates are NOT on a fixed formula — BLS and the Federal
-// Reserve announce them individually, typically about a year ahead. So
-// those two stay as a manually-maintained list below. When you notice the
-// list getting short (check the "In Xd" countdown on the live page), just
-// add more rows from bls.gov/schedule/news_release/cpi.htm and
-// federalreserve.gov/monetarypolicy/fomccalendars.htm — no other code
-// needs to change.
+// NFP is ALWAYS the first Friday of the month (8:30 AM ET), so it is
+// computed and never goes stale. CPI and FOMC dates are announced
+// individually, so they stay in the manual list below. Add rows from
+// bls.gov/schedule/news_release/cpi.htm and
+// federalreserve.gov/monetarypolicy/fomccalendars.htm when it runs short.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Computes the first Friday of the given month/year, at 8:30 AM ET.
 function firstFridayOfMonth(year, monthIndexZeroBased) {
   const d = new Date(year, monthIndexZeroBased, 1);
-  const dayOfWeek = d.getDay(); // 0 = Sun ... 5 = Fri
+  const dayOfWeek = d.getDay();
   const offsetToFriday = (5 - dayOfWeek + 7) % 7;
   d.setDate(1 + offsetToFriday);
   return d;
 }
 
-// Generates NFP events for the next `monthsAhead` months from today,
-// formatted the same way as the manual CPI/FOMC entries below so they can
-// be merged into one list.
 function generateNfpEvents(monthsAhead = 18) {
   const events = [];
   const now = new Date();
@@ -84,8 +423,6 @@ function generateNfpEvents(monthsAhead = 18) {
     const monthIndex = ((targetMonth % 12) + 12) % 12;
     const friday = firstFridayOfMonth(targetYear, monthIndex);
 
-    // NFP reports the PRIOR month's data (e.g. the report released the
-    // first Friday of September covers August's numbers).
     const refDate = new Date(targetYear, monthIndex - 1, 1);
     const refMonth = refDate.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
@@ -99,9 +436,6 @@ function generateNfpEvents(monthsAhead = 18) {
   return events;
 }
 
-// CPI and FOMC — hand-maintained, sourced from bls.gov/schedule and
-// federalreserve.gov/monetarypolicy as of Aug 2026. Add more rows here as
-// BLS/the Fed publish further-out dates; nothing else needs to change.
 const MANUAL_NEWS_EVENTS = [
   // CPI (8:30 AM ET, ~second week of the month)
   { name: "CPI (Inflation)", type: "CPI", date: "2026-08-12", refMonth: "July 2026" },
@@ -132,9 +466,6 @@ const EVENT_LABEL_TIME = {
   FOMC: "2:00 PM ET",
 };
 
-// Merges computed NFP dates with the manual CPI/FOMC list, drops anything
-// already in the past, and sorts by date — so the calendar always shows
-// the next upcoming events with zero manual upkeep for NFP specifically.
 function getUpcomingEvents() {
   const now = new Date();
   const allEvents = [...generateNfpEvents(18), ...MANUAL_NEWS_EVENTS];
@@ -163,9 +494,6 @@ function EconomicCalendar() {
 
   useEffect(() => {
     setEvents(getUpcomingEvents().slice(0, 4));
-    // Refresh once an hour — this naturally rolls the calendar forward to
-    // the next event the moment the current one passes, with no manual
-    // "advance to next" step needed for NFP, and minimal upkeep for CPI/FOMC.
     const id = setInterval(() => {
       setEvents(getUpcomingEvents().slice(0, 4));
     }, 60 * 60 * 1000);
@@ -216,173 +544,350 @@ function EconomicCalendar() {
   );
 }
 
-async function callOpenRouter(requestBody, attempt = 1) {
-  const response = await fetchWithTimeout(
-    API_URL,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-        "HTTP-Referer": "http://localhost:5173",
-        "X-Title": "Blue Chip Trading",
-      },
-      body: JSON.stringify(requestBody),
-    },
-    20000
+// Price ladder: stop, entry zone, target and where the live price is now.
+function Ladder({ signal, price, ev }) {
+  const SL = Number(signal.stop_loss);
+  const TP = Number(signal.take_profit);
+  const E = Number(signal.entry);
+  const P = price ? Number(price.close) : null;
+
+  const values = [SL, TP, ev.zoneLow, ev.zoneHigh, ...(P !== null ? [P] : [])];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pad = (max - min) * 0.08 || 0.0001;
+  const lo = min - pad;
+  const hi = max + pad;
+  const pct = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100));
+
+  return (
+    <div className="ladder">
+      <div className="ladder-track">
+        <div
+          className="ladder-zone"
+          style={{ left: `${pct(ev.zoneLow)}%`, width: `${pct(ev.zoneHigh) - pct(ev.zoneLow)}%` }}
+        />
+        <div className="ladder-tick sl" style={{ left: `${pct(SL)}%` }} />
+        <div className="ladder-tick tp" style={{ left: `${pct(TP)}%` }} />
+        {P !== null && (
+          <div className={`ladder-price ${ev.state}`} style={{ left: `${pct(P)}%` }}>
+            <b>{fmt(signal.pair, P)}</b>
+          </div>
+        )}
+      </div>
+      <div className="ladder-labels">
+        <span className="sl" style={{ left: `${pct(SL)}%` }}>SL</span>
+        <span className="zone" style={{ left: `${pct(E)}%` }}>ENTRY</span>
+        <span className="tp" style={{ left: `${pct(TP)}%` }}>TP</span>
+      </div>
+    </div>
   );
-
-  const data = await response.json();
-
-  if (response.status === 429 && attempt < 2) {
-    await sleep(1200);
-    return callOpenRouter(requestBody, attempt + 1);
-  }
-
-  return { response, data };
 }
 
-// System prompt is now parameterized by session so we can generate ONE
-// session's 4 signals at a time (fast, ~4-6s) instead of all 12 up front
-// (slow, ~15-20s) before the user sees anything.
-function buildSignalPrompt(session) {
-  return `You are a trading signals generator for a forex trading platform. You will be given today's live price snapshot for several currency pairs, plus a list of upcoming high-impact US economic news events (NFP, CPI, and FOMC rate decisions) with their exact dates. Using ONLY that real data as your reference for current price levels, generate trade ideas.
+// One signal card, used for both the AI signal and mentor signals.
+// Pass `ev` (from evaluateSetup) for the detailed AI version.
+function SignalCard({ signal, featured = false, isMentor = false, ev = null, price = null, isLive = true, checkedAt = null }) {
+  const direction = String(signal.direction || "").toLowerCase();
+  const conf = confidenceInfo(signal.confidence);
+  const at = timeOf(signal);
+  const pair = signal.pair;
+  const detailed = Boolean(ev);
+  const buy = direction === "buy";
 
-Generate exactly ONE signal for EACH of these 4 trade types, all for the "${session}" trading session: Scalp, Short-Term, Daily, Long-Term. That is 4 signals total.
+  const slPips = detailed ? toPips(pair, ev.risk) : 0;
+  const tpPips = detailed ? toPips(pair, ev.reward) : 0;
+  const rr = detailed && ev.risk > 0 ? ev.reward / ev.risk : 0;
 
-If a signal's likely holding period would span one of the given news events, factor that into your confidence rating (NFP, CPI, and FOMC releases can cause sharp, unpredictable volatility) and mention it briefly in the rationale — e.g. "FOMC decision in 3 days; sizing/confidence adjusted accordingly."
+  return (
+    <div className={`signal-card ${featured ? "signal-featured" : ""} ${detailed ? `status-${ev.state}` : ""}`}>
+      <div className="signal-card-header">
+        <span className="signal-type-badge">
+          {signal.type ? `${signal.type} · ` : ""}{signal.session}
+        </span>
+        <span className={`signal-direction ${direction}`}>
+          {buy ? "▲ BUY" : "▼ SELL"}
+        </span>
+      </div>
 
-Respond with ONLY valid JSON, no markdown fences, no commentary, matching this exact shape:
+      <div className="signal-pair">{formatPair(pair)}</div>
 
-{
-  "signals": [
-    {
-      "session": "${session}",
-      "type": "Scalp" | "Short-Term" | "Daily" | "Long-Term",
-      "pair": "EUR/USD",
-      "direction": "buy" | "sell",
-      "entry": 1.0850,
-      "stop_loss": 1.0820,
-      "take_profit": 1.0910,
-      "confidence": "low" | "medium" | "high",
-      "rationale": "One or two sentence explanation grounded in the given price data and any relevant upcoming news event."
-    }
-  ]
+      {detailed && (
+        <div className={`trade-status ${ev.state}`}>
+          <div className="trade-status-top">
+            <span className="trade-status-icon">{ev.icon}</span>
+            <div>
+              <div className="trade-status-title">{ev.title}</div>
+              <div className="trade-status-msg">{ev.message}</div>
+            </div>
+          </div>
+          {ev.facts.length > 0 && (
+            <div className="trade-status-facts">
+              {ev.facts.map(([label, value]) => (
+                <div key={label}>
+                  <span>{label}</span>
+                  <b>{value}</b>
+                </div>
+              ))}
+            </div>
+          )}
+          {ev.facts.length > 0 && (
+            <div className="trade-status-note">
+              {isLive
+                ? "Checked against the live price feed"
+                : "Live feed unavailable. Using the daily reference rate, so this status is approximate"}
+              {checkedAt
+                ? ` · ${checkedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`
+                : ""}
+            </div>
+          )}
+        </div>
+      )}
+
+      {detailed && <Ladder signal={signal} price={price} ev={ev} />}
+
+      <div className="signal-levels">
+        {detailed && (
+          <div className="signal-level">
+            <span className="signal-level-label">Entry zone</span>
+            <span className="signal-level-value">
+              {fmt(pair, ev.zoneLow)} – {fmt(pair, ev.zoneHigh)}
+            </span>
+          </div>
+        )}
+        <div className="signal-level">
+          <span className="signal-level-label">{detailed ? "Ideal entry" : "Entry"}</span>
+          <span className="signal-level-value">{detailed ? fmt(pair, signal.entry) : signal.entry}</span>
+        </div>
+        <div className="signal-level">
+          <span className="signal-level-label">Stop Loss</span>
+          <span className="signal-level-value sl">{detailed ? fmt(pair, signal.stop_loss) : signal.stop_loss}</span>
+        </div>
+        <div className="signal-level">
+          <span className="signal-level-label">Take Profit</span>
+          <span className="signal-level-value tp">{detailed ? fmt(pair, signal.take_profit) : signal.take_profit}</span>
+        </div>
+      </div>
+
+      {detailed && (
+        <div className="trade-stats">
+          <div><span>Risk</span><b>{slPips.toFixed(1)} pips</b></div>
+          <div><span>Reward</span><b>{tpPips.toFixed(1)} pips</b></div>
+          <div><span>Reward : Risk</span><b>1 : {rr.toFixed(1)}</b></div>
+        </div>
+      )}
+
+      <div className={`signal-confidence ${conf.level}`}>Confidence: {conf.label}</div>
+      <div className="signal-conf-bar">
+        <i className={conf.level} style={{ width: `${Math.min(conf.score, 100)}%` }} />
+      </div>
+
+      {signal.rationale && <p className="signal-rationale">{signal.rationale}</p>}
+
+      {detailed && (
+        <div className="trade-rule">
+          Entry rule: {buy ? "buy" : "sell"} only while price is between {fmt(pair, ev.zoneLow)} and{" "}
+          {fmt(pair, ev.zoneHigh)}. Cancel the setup if price touches {fmt(pair, signal.stop_loss)} or reaches{" "}
+          {fmt(pair, signal.take_profit)} before you are in, or when the {signal.session} session ends at{" "}
+          {SESSION_WINDOWS[signal.session]?.endLabel || ""} (SA time).
+        </div>
+      )}
+
+      <div className="signal-posted">
+        <span className={`signal-source ${isMentor ? "mentor" : "ai"}`}>
+          {isMentor ? signal.mentor_name || "Mentor" : "AI"}
+        </span>
+        {at ? ` · ${at}` : ""}
+      </div>
+    </div>
+  );
 }
 
-Base entry/SL/TP levels on the actual close/high/low values provided — do not invent price levels unrelated to the given data. If you cannot justify a confident setup for a slot, still provide your best reasoned idea but mark confidence as "low" and say so in the rationale.`;
-}
-
-async function generateSignalsForSession(session, priceData, upcomingNews) {
-  const userPrompt = `Today's live price data:\n${JSON.stringify(
-    priceData,
-    null,
-    2
-  )}\n\nUpcoming high-impact news events:\n${JSON.stringify(upcomingNews, null, 2)}`;
-
-  const { response, data } = await callOpenRouter({
-    model: "openai/gpt-3.5-turbo",
-    messages: [
-      { role: "system", content: buildSignalPrompt(session) },
-      { role: "user", content: userPrompt },
-    ],
-  });
-
-  if (!response.ok || data.error) {
-    const msg = data?.error?.message || `Request failed (${response.status})`;
-    throw new Error(msg);
-  }
-
-  const raw = data?.choices?.[0]?.message?.content || "";
-  const cleaned = raw.replace(/```json|```/g, "").trim();
-
-  let parsed;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch (parseErr) {
-    console.error(`Raw AI response for ${session} that failed to parse:`, raw);
-    throw new Error(`AI response for ${session} wasn't valid JSON.`);
-  }
-
-  const today = todayISO();
-  return (parsed.signals || []).map((s) => ({
-    date: today,
-    session,
-    type: s.type,
-    pair: s.pair,
-    direction: s.direction,
-    entry: s.entry,
-    stop_loss: s.stop_loss,
-    take_profit: s.take_profit,
-    confidence: s.confidence,
-    rationale: s.rationale,
-  }));
-}
-
-// `priceData` comes from Landing.jsx's single TwelveData poller, already
-// shaped as [{ pair, close, high, low, percent_change }, ...] for the 3
-// majors. An empty array means Landing hasn't gotten its first successful
-// fetch back yet — we just wait for it instead of fetching independently.
 export default function SignalsPage({ priceData = [] }) {
-  const [signals, setSignals] = useState([]);
-  const [loadingSessions, setLoadingSessions] = useState(new Set());
-  const [errorsBySessions, setErrorsBySessions] = useState({});
-  const [activeSession, setActiveSession] = useState("Asia");
-  const [checkedCache, setCheckedCache] = useState(false);
+  const [signals, setSignals] = useState([]); // AI signals (public.signals)
+  const [loading, setLoading] = useState(true);
+  const [mentorSignals, setMentorSignals] = useState([]); // public.mentor_signals
+  const [mentorLoading, setMentorLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [currentSession, setCurrentSession] = useState(getCurrentSession());
+  const [activeSession, setActiveSession] = useState(getCurrentSession());
+  const [manualPick, setManualPick] = useState(false);
+  const [marketClosed, setMarketClosed] = useState(isMarketClosed());
+  const [generatingFor, setGeneratingFor] = useState(null);
+  const [genErrors, setGenErrors] = useState({});
+  const [priceWaitDone, setPriceWaitDone] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
-  const generatedRef = useRef(new Set()); // sessions already generated or in flight this pageload
+  const [now, setNow] = useState(() => new Date());
+  const [dayKey, setDayKey] = useState(todayISO());
+  const [fallbackPrices, setFallbackPrices] = useState([]);
+  const [checkedAt, setCheckedAt] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 1. Once we have live prices, check Supabase ONCE for anything already
-  // generated today (by an earlier visitor). This never blocks on the AI.
+  const triedRef = useRef(new Set()); // "date-session" keys already generated or in flight this pageload
+  const priceDataRef = useRef(priceData);
+  const mountedRef = useRef(true);
+
+  priceDataRef.current = priceData;
+
+  // A string key, so the effect below only runs when prices actually change.
+  const priceKey = priceData.map((p) => `${p.pair}:${p.close}`).join("|");
+
   useEffect(() => {
-    if (!priceData || priceData.length === 0 || checkedCache) return;
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
+  // Give Landing's live prices a few seconds to arrive before using the fallback.
+  useEffect(() => {
+    const id = setTimeout(() => setPriceWaitDone(true), PRICE_WAIT_MS);
+    return () => clearTimeout(id);
+  }, []);
+
+  // Every time a fresh price arrives, note when the setup was last checked.
+  useEffect(() => {
+    if (priceKey) setCheckedAt(new Date());
+  }, [priceKey]);
+
+  // Load today's signals, and reload whenever one is posted or deleted.
+  useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      try {
-        const { data: existing, error: fetchError } = await supabase
-          .from("signals")
-          .select("*")
-          .eq("date", todayISO());
+    const fetchSignals = async () => {
+      const { data, error: fetchError } = await supabase
+        .from("signals")
+        .select("*")
+        .eq("date", todayISO())
+        .order("created_at", { ascending: false });
 
-        if (fetchError) throw fetchError;
+      if (cancelled) return;
 
-        if (!cancelled && existing && existing.length > 0) {
-          setSignals(existing);
-          // Mark whichever sessions already came back as cache-covered so
-          // we don't re-generate them below.
-          existing.forEach((s) => generatedRef.current.add(s.session));
-        }
-      } catch (err) {
-        console.error("Error checking cached signals:", err);
-      } finally {
-        if (!cancelled) setCheckedCache(true);
+      if (fetchError) {
+        console.error("Error loading signals:", fetchError);
+        setError("Couldn't load signals. Please try again.");
+      } else {
+        setError("");
+        setSignals(data || []);
       }
-    })();
+      setLoading(false);
+    };
+
+    fetchSignals();
+
+    const channel = supabase
+      .channel("client-signals-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "signals" }, fetchSignals)
+      .subscribe();
 
     return () => {
       cancelled = true;
+      supabase.removeChannel(channel);
     };
-  }, [priceData, checkedCache]);
+  }, [dayKey]);
 
-  // 2. Once the cache check is done, generate ONLY the active session if
-  // it isn't already covered — one request at a time, triggered per tab,
-  // instead of firing 3 calls up front. This makes it obvious which
-  // session (if any) is slow or failing, and means switching to a tab you
-  // haven't opened yet is the only thing that costs an AI call.
+  // Load mentor-posted signals from the last 24 hours (own table), live.
   useEffect(() => {
-    if (!checkedCache || priceData.length === 0) return;
-    if (generatedRef.current.has(activeSession)) return;
-
-    generatedRef.current.add(activeSession);
     let cancelled = false;
 
-    const run = async () => {
-      setLoadingSessions((prev) => new Set(prev).add(activeSession));
-      setErrorsBySessions((prev) => ({ ...prev, [activeSession]: null }));
+    const fetchMentorSignals = async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error: fetchError } = await supabase
+        .from("mentor_signals")
+        .select("*")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false });
 
+      if (cancelled) return;
+
+      if (fetchError) console.error("Error loading mentor signals:", fetchError);
+      else {
+        // Anything posted while the market was closed (weekend) never shows
+        setMentorSignals((data || []).filter((s) => !isMarketClosed(new Date(s.created_at))));
+      }
+      setMentorLoading(false);
+    };
+
+    fetchMentorSignals();
+
+    const channel = supabase
+      .channel("client-mentor-signals-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "mentor_signals" }, fetchMentorSignals)
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Every minute: roll over to the next session (by clock time), refresh the
+  // "session ends in" countdown and catch the day changing. If the user picked
+  // a tab themselves, we leave their tab alone.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const t = new Date();
+      setNow(t);
+      setMarketClosed(isMarketClosed(t));
+      setDayKey(todayISO());
+      const session = getCurrentSession(t);
+      setCurrentSession(session);
+      if (!manualPick) setActiveSession(session);
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, [manualPick]);
+
+  const aiSignal = signals.find((s) => !isMentorSignal(s) && sameSession(s.session, activeSession));
+  const hasAi = Boolean(aiSignal);
+  const isViewingCurrent = activeSession === currentSession;
+
+  // Daily reference rates, only used for the status when live prices are missing.
+  const loadFallback = async () => {
+    try {
+      const rows = await fetchFallbackPrices();
+      if (mountedRef.current) {
+        setFallbackPrices(rows);
+        setCheckedAt(new Date());
+      }
+    } catch (err) {
+      console.error("Fallback prices failed:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!hasAi || !priceWaitDone || priceData.length > 0) return;
+    loadFallback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAi, priceWaitDone, priceData.length]);
+
+  // No AI signal for the CURRENT session yet: generate ONE and save it.
+  // (Only the current session is generated, so levels always match the market now.)
+  useEffect(() => {
+    if (marketClosed || loading || hasAi || !isViewingCurrent) return;
+    if (priceDataRef.current.length === 0 && !priceWaitDone) return;
+
+    const session = activeSession;
+    const key = `${todayISO()}-${session}`;
+    if (triedRef.current.has(key)) return;
+    triedRef.current.add(key);
+
+    (async () => {
+      setGeneratingFor(session);
+      setGenErrors((prev) => ({ ...prev, [session]: null }));
       try {
+        // Someone else may have generated it a moment ago: use theirs.
+        const { data: existing } = await supabase
+          .from("signals")
+          .select("*")
+          .eq("date", todayISO())
+          .ilike("session", `${session.slice(0, 4)}%`);
+        const found = (existing || []).find((s) => !isMentorSignal(s));
+        if (found) {
+          if (mountedRef.current) setSignals((prev) => [found, ...prev.filter((s) => s.id !== found.id)]);
+          return;
+        }
+
+        const prices =
+          priceDataRef.current.length > 0 ? priceDataRef.current : await fetchFallbackPrices();
+
         const upcomingNews = getUpcomingEvents().slice(0, 3).map((e) => ({
           event: e.name,
           date: e.date,
@@ -390,52 +895,53 @@ export default function SignalsPage({ priceData = [] }) {
           days_until: e.daysUntil,
         }));
 
-        const rows = await generateSignalsForSession(activeSession, priceData, upcomingNews);
+        const row = await generateSessionSignal(session, prices, upcomingNews);
 
-        if (rows.length === 0) throw new Error("AI returned no signals for this session.");
+        if (mountedRef.current) setSignals((prev) => [row, ...prev]);
 
-        if (!cancelled) {
-          setSignals((prev) => [...prev, ...rows]);
-        }
-
-        // Cache in Supabase so later visitors (and later tab switches)
-        // read instead of regenerating.
-        const { error: insertError } = await supabase.from("signals").insert(rows);
-        if (insertError) console.error("Failed to cache signals:", insertError);
+        const { error: insertError } = await supabase.from("signals").insert(row);
+        if (insertError) console.error("Failed to save AI signal:", insertError);
       } catch (err) {
-        console.error(`Signals generation error for ${activeSession}:`, err);
-        if (!cancelled) {
-          setErrorsBySessions((prev) => ({
+        console.error(`AI signal error for ${session}:`, err);
+        triedRef.current.delete(key); // allow Retry
+        if (mountedRef.current) {
+          setGenErrors((prev) => ({
             ...prev,
-            [activeSession]: err.message || "Something went wrong generating this session.",
+            [session]: err.message || "Couldn't generate a signal.",
           }));
         }
-        // Allow retrying this session (e.g. via a refresh) instead of
-        // permanently marking it as done.
-        generatedRef.current.delete(activeSession);
       } finally {
-        if (!cancelled) {
-          setLoadingSessions((prev) => {
-            const next = new Set(prev);
-            next.delete(activeSession);
-            return next;
-          });
-        }
+        if (mountedRef.current) setGeneratingFor((cur) => (cur === session ? null : cur));
       }
-    };
+    })();
+  }, [marketClosed, loading, hasAi, activeSession, isViewingCurrent, priceWaitDone, retryTick]);
 
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeSession, checkedCache, priceData, retryTick]);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (priceDataRef.current.length === 0) await loadFallback();
+      else await sleep(500);
+    } finally {
+      if (mountedRef.current) {
+        setCheckedAt(new Date());
+        setRefreshing(false);
+      }
+    }
+  };
 
-  const sessionSignals = signals
-    .filter((s) => s.session === activeSession)
-    .sort((a, b) => TRADE_TYPES.indexOf(a.type) - TRADE_TYPES.indexOf(b.type));
+  const generating = generatingFor === activeSession;
+  const genError = genErrors[activeSession];
 
-  const activeSessionLoading = loadingSessions.has(activeSession);
-  const activeSessionError = errorsBySessions[activeSession];
+  const isLive = priceData.length > 0;
+  const prices = isLive ? priceData : fallbackPrices;
+  const pairKey = aiSignal ? normPair(aiSignal.pair) : "";
+  const livePrice = aiSignal ? prices.find((p) => normPair(p.pair) === pairKey) || null : null;
+
+  const signalIsCurrent = aiSignal ? sameSession(aiSignal.session, currentSession) : false;
+  const ev = aiSignal ? evaluateSetup(aiSignal, livePrice, signalIsCurrent, now) : null;
+
+  const activeIdx = SESSIONS.indexOf(activeSession);
+  const currentIdx = SESSIONS.indexOf(currentSession);
 
   return (
     <div className="signals-page">
@@ -445,91 +951,157 @@ export default function SignalsPage({ priceData = [] }) {
       </div>
 
       <div className="disclaimer-banner">
-        ⚠️ These signals are AI-generated from live price data for educational
-        purposes only. They are not financial advice and are not guaranteed
-        to be accurate or profitable. Trade at your own risk.
+        ⚠️ Signals come from Blue Chip mentors or are AI-generated, for
+        educational purposes only. They are not financial advice and are not
+        guaranteed to be accurate or profitable. Trade at your own risk.
       </div>
 
       <EconomicCalendar />
 
-      <div className="session-tabs">
-        {SESSIONS.map((s) => (
-          <button
-            key={s}
-            className={`session-tab ${activeSession === s ? "active" : ""}`}
-            onClick={() => setActiveSession(s)}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
+      {marketClosed ? (
+        <div className="market-closed">
+          <div className="market-closed-icon">🌙</div>
+          <h2>Markets are closed</h2>
+          <p>
+            Forex is closed for the weekend, so there are no signals right now.
+            Signals return when the market opens on {nextOpenLabel()}.
+          </p>
+        </div>
+      ) : (
+      <>
+      {/* ── 1. AI SIGNAL ─────────────────────────────────────────── */}
+      <section className="signals-section">
+        <div className="section-title-row">
+          <h2 className="section-title">
+            AI Signal
+            <span className="section-sub">
+              One setup per session · Asia 02:00–09:00 · London 09:00–15:30 · New York 15:30–00:00 (SA time)
+            </span>
+          </h2>
 
-      {priceData.length === 0 && (
-        <div className="signals-status">Waiting on live prices…</div>
-      )}
+          <div className="signal-controls">
+            <div className="session-tabs">
+              {SESSIONS.map((s) => (
+                <button
+                  key={s}
+                  className={`session-tab ${activeSession === s ? "active" : ""}`}
+                  title={`${SESSION_WINDOWS[s].startLabel} – ${SESSION_WINDOWS[s].endLabel}`}
+                  onClick={() => {
+                    setActiveSession(s);
+                    setManualPick(s !== currentSession);
+                  }}
+                >
+                  {s}
+                  {s === currentSession && <span className="session-now"> · Now</span>}
+                </button>
+              ))}
+            </div>
 
-      {priceData.length > 0 && !checkedCache && (
-        <div className="signals-status">Checking today's signals…</div>
-      )}
-
-      {priceData.length > 0 && checkedCache && activeSessionLoading && sessionSignals.length === 0 && (
-        <div className="signals-status">Generating {activeSession} signals…</div>
-      )}
-
-      {activeSessionError && sessionSignals.length === 0 && !activeSessionLoading && (
-        <div className="signals-status signals-error">
-          {activeSessionError}
-          <div style={{ marginTop: 10 }}>
-            <button
-              className="admin-btn ghost"
-              onClick={() => {
-                generatedRef.current.delete(activeSession);
-                setErrorsBySessions((prev) => ({ ...prev, [activeSession]: null }));
-                setRetryTick((t) => t + 1);
-              }}
-            >
-              Retry
-            </button>
+            {aiSignal && signalIsCurrent && (
+              <div className="refresh-wrap">
+                <button
+                  className={`refresh-btn ${refreshing ? "spinning" : ""}`}
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                >
+                  <span className="refresh-icon">↻</span>
+                  <span className="refresh-text">{refreshing ? "Checking…" : "Check status"}</span>
+                </button>
+                {checkedAt && (
+                  <span className="refresh-time">
+                    {checkedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {sessionSignals.length > 0 && (
-        <div className="signal-grid">
-          {TRADE_TYPES.map((type) => {
-            const signal = sessionSignals.find((s) => s.type === type);
-            if (!signal) return null;
-            return (
-              <div className="signal-card" key={type}>
-                <div className="signal-card-header">
-                  <span className="signal-type-badge">{type}</span>
-                  <span className={`signal-direction ${signal.direction}`}>
-                    {signal.direction === "buy" ? "▲ BUY" : "▼ SELL"}
-                  </span>
-                </div>
-                <div className="signal-pair">{signal.pair}</div>
-                <div className="signal-levels">
-                  <div className="signal-level">
-                    <span className="signal-level-label">Entry</span>
-                    <span className="signal-level-value">{signal.entry}</span>
-                  </div>
-                  <div className="signal-level">
-                    <span className="signal-level-label">Stop Loss</span>
-                    <span className="signal-level-value sl">{signal.stop_loss}</span>
-                  </div>
-                  <div className="signal-level">
-                    <span className="signal-level-label">Take Profit</span>
-                    <span className="signal-level-value tp">{signal.take_profit}</span>
-                  </div>
-                </div>
-                <div className={`signal-confidence ${signal.confidence}`}>
-                  Confidence: {signal.confidence}
-                </div>
-                <p className="signal-rationale">{signal.rationale}</p>
-              </div>
-            );
-          })}
+        {loading && <div className="signals-status">Loading signal…</div>}
+
+        {!loading && error && !aiSignal && (
+          <div className="signals-status signals-error">{error}</div>
+        )}
+
+        {/* Other tabs: no signal saved */}
+        {!loading && !aiSignal && !isViewingCurrent && activeIdx > currentIdx && (
+          <div className="signals-status">
+            The {activeSession} session opens at {SESSION_WINDOWS[activeSession].startLabel} (SA time).
+            Its signal is generated when the session starts.
+          </div>
+        )}
+
+        {!loading && !aiSignal && !isViewingCurrent && activeIdx < currentIdx && (
+          <div className="signals-status">
+            No signal was generated for the {activeSession} session today.
+          </div>
+        )}
+
+        {/* Current session: generating */}
+        {!loading && !aiSignal && isViewingCurrent && generating && (
+          <div className="signals-status">Generating {activeSession} signal…</div>
+        )}
+
+        {!loading && !aiSignal && isViewingCurrent && !generating && !genError && (
+          <div className="signals-status">Getting ready to generate the {activeSession} signal…</div>
+        )}
+
+        {!loading && !aiSignal && isViewingCurrent && !generating && genError && (
+          <div className="signals-status signals-error">
+            {genError}
+            <div style={{ marginTop: 10 }}>
+              <button
+                className="admin-btn ghost"
+                onClick={() => {
+                  triedRef.current.delete(`${todayISO()}-${activeSession}`);
+                  setGenErrors((prev) => ({ ...prev, [activeSession]: null }));
+                  setRetryTick((t) => t + 1);
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!loading && aiSignal && (
+          <div className="signal-grid">
+            <SignalCard
+              signal={aiSignal}
+              featured
+              ev={ev}
+              price={livePrice}
+              isLive={isLive}
+              checkedAt={checkedAt}
+            />
+          </div>
+        )}
+      </section>
+
+      {/* ── 2. MENTOR SIGNALS ───────────────────────────────────── */}
+      <section className="signals-section">
+        <div className="section-title-row">
+          <h2 className="section-title">
+            Mentor Signals
+            <span className="section-sub">Posted by our mentors in the last 24 hours</span>
+          </h2>
         </div>
+
+        {mentorLoading && <div className="signals-status">Loading mentor signals…</div>}
+
+        {!mentorLoading && mentorSignals.length === 0 && (
+          <div className="signals-status">No mentor signals posted yet. Check back soon.</div>
+        )}
+
+        {!mentorLoading && mentorSignals.length > 0 && (
+          <div className="mentor-grid">
+            {mentorSignals.map((s) => (
+              <SignalCard key={s.id} signal={s} isMentor />
+            ))}
+          </div>
+        )}
+      </section>
+      </>
       )}
     </div>
   );

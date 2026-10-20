@@ -166,7 +166,7 @@ function TerminalPanel() {
   );
 }
 
-export default function Academy({ onLoginClick, onSignupClick }) {
+export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) {
   const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState(null);
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
@@ -174,6 +174,12 @@ export default function Academy({ onLoginClick, onSignupClick }) {
   const handleSignup = (e) => {
     e.preventDefault();
     if (onSignupClick) onSignupClick();
+  };
+
+  // Opens the mentor application page (nav "Become a Mentor" + career "Apply Now")
+  const handleMentor = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (onMentorClick) onMentorClick();
   };
 
   /* --- NEW: cursor-follow spotlight glow across the whole page.
@@ -217,7 +223,7 @@ export default function Academy({ onLoginClick, onSignupClick }) {
           <a href="#">{t("nav.pricing")}</a>
         </div>
         <div className="nav-right">
-          <a href="#" className="nav-careers">
+          <a href="#" className="nav-careers" onClick={handleMentor}>
             {t("nav.becomeMentor")}
           </a>
           <LanguageSwitcher />
@@ -385,7 +391,9 @@ export default function Academy({ onLoginClick, onSignupClick }) {
         <div className="career-content">
           <h2 className="career-title">{t("career.title")}</h2>
           <p className="career-desc">{t("career.desc")}</p>
-          <button className="career-btn">{t("career.cta")}</button>
+          <button className="career-btn" onClick={handleMentor}>
+            {t("career.cta")}
+          </button>
         </div>
         <div className="career-stats">
           <div className="career-stat">

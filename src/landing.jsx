@@ -4,12 +4,13 @@ import { supabase } from "./supabaseClient"; // adjust path if different
 import AIAssistant from "./AIAssistant.jsx";
 import BAndP from "./B@P.jsx";
 import SignalsPage from "./signals.jsx";
-import GoLive from "./gLive.jsx";
 import WatchLive from "./live.jsx";
 import CommunityPage from "./community.jsx";
 import Analyze from "./analyze.jsx";
 import TradingPanel from "./TradingPanel.jsx";
 import Account from "./Account.jsx";
+import Courses from "./Courses.jsx";
+import MentorApplication from "./mentorApplication.jsx"; // adjust filename/path if different
 import {
   getOrCreateDemoAccount,
   fetchOpenPositions,
@@ -44,12 +45,12 @@ const NAV_ITEMS = [
   { label: "Dashboard", value: "dashboard" },
   { label: "Account", value: "account" },
   { label: "Analyze", value: "analyze" },
+  { label: "Courses", value: "courses" },
   { label: "Demo Trade", value: "demo" },
   { label: "Signals", value: "signals" },
   { label: "Live", value: "live" },
   { label: "Partners", value: "partners" },
   { label: "Community", value: "Community" },
-  { label: "Go Live", value: "GLive" },
 ];
 
 const MARKET_WATCH_BASE = PAIRS.map((p) => ({
@@ -211,7 +212,46 @@ function TradingViewChart({ symbol, interval }) {
   );
 }
 
-function DashboardNav({ user, onLogout, activeNavItem, setActiveNavItem }) {
+// ── Theme (light/dark) ────────────────────────────────────────
+const THEME_STORAGE_KEY = "bluechip-theme";
+
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+    } catch {
+      return "dark";
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // ignore storage errors (private browsing etc.)
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  return [theme, toggleTheme];
+}
+
+function ThemeToggle({ theme, toggleTheme }) {
+  const isDark = theme === "dark";
+  return (
+    <button
+      className="theme-toggle-btn"
+      onClick={toggleTheme}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label="Toggle color theme"
+    >
+      <span className="theme-toggle-icon">{isDark ? "🌙" : "☀️"}</span>
+    </button>
+  );
+}
+
+function DashboardNav({ user, onLogout, activeNavItem, setActiveNavItem, theme, toggleTheme }) {
   return (
     <nav className="dashboard-nav">
       <div className="nav-logo">
@@ -232,9 +272,20 @@ function DashboardNav({ user, onLogout, activeNavItem, setActiveNavItem }) {
 
       <div className="nav-right">
         <div className="nav-user">
-          <div className="user-avatar">{user?.name?.charAt(0) || "U"}</div>
+          <div className="user-avatar-wrap">
+            {user?.profile_picture_url ? (
+              <img
+                src={user.profile_picture_url}
+                alt=""
+                className="user-avatar-img"
+              />
+            ) : (
+              <div className="user-avatar">{user?.name?.charAt(0) || "U"}</div>
+            )}
+          </div>
           <span className="user-name">{user?.name || "Trader"}</span>
         </div>
+        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
         <button className="logout-btn" onClick={onLogout}>
           Log Out
         </button>
@@ -242,84 +293,17 @@ function DashboardNav({ user, onLogout, activeNavItem, setActiveNavItem }) {
     </nav>
   );
 }
-// Captures one frame from a <video> element and returns it as a Base64 JPEG string
-function captureFrame(videoEl) {
-  const canvas = document.createElement("canvas");
-  canvas.width = videoEl.videoWidth;
-  canvas.height = videoEl.videoHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.8);
-}
-
-// Security feature: on login / whenever Landing mounts (or refreshes) while
-// logged in, briefly opens the webcam, grabs a single frame, and stores it
-// against the current user in Supabase. Runs once per mount, silently no-ops
-// if the user denies camera permission.
-function useLoginScreenshot() {
-  const captured = useRef(false);
-
-  useEffect(() => {
-    if (captured.current) return;
-    captured.current = true;
-
-    let stream;
-    let cancelled = false;
-
-    const run = async () => {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const authUser = userData?.user;
-        if (!authUser) return;
-
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-
-        const videoEl = document.createElement("video");
-        videoEl.srcObject = stream;
-        videoEl.muted = true;
-        videoEl.playsInline = true;
-        await videoEl.play();
-
-        // Give the feed a moment to actually have frames before capturing.
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        if (cancelled) return;
-
-        const screenshot = captureFrame(videoEl);
-
-        const { error } = await supabase.from("login_sessions").insert({
-          user_id: authUser.id,
-          screenshot,
-        });
-
-        if (error) console.error("Failed to save login screenshot:", error);
-      } catch (err) {
-        // Camera denied/unavailable — fail silently, don't block login.
-        console.error("Login screenshot capture failed:", err);
-      } finally {
-        if (stream) stream.getTracks().forEach((t) => t.stop());
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-      if (stream) stream.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-}
 
 export default function Landing({ user, onLogout, onUserUpdate }) {
-useLoginScreenshot();
+  const [theme, toggleTheme] = useTheme();
   const [activeSymbol, setActiveSymbol] = useState(SYMBOLS[0].value);
   const [activeInterval, setActiveInterval] = useState("15");
   const [marketWatch, setMarketWatch] = useState(MARKET_WATCH_BASE);
   const [rawQuotes, setRawQuotes] = useState({});
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
+
+  // Opens the mentor application page (called by "Apply Now" buttons in child pages)
+  const openMentorApplication = () => setActiveNavItem("mentor");
 
   const [dashboardStats, setDashboardStats] = useState({
     balance: null,
@@ -443,6 +427,8 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
 
         <div className="demo-trade-section">
@@ -494,6 +480,24 @@ useLoginScreenshot();
     );
   }
 
+  if (activeNavItem === "courses") {
+    return (
+      <div className="dashboard-page">
+        <div className="dashboard-grid" />
+        <DashboardNav
+          user={user}
+          onLogout={onLogout}
+          activeNavItem={activeNavItem}
+          setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        <Courses />
+        <AIAssistant user={user} activeSymbol={activeSymbol} />
+      </div>
+    );
+  }
+
   if (activeNavItem === "account") {
     return (
       <div className="dashboard-page">
@@ -503,6 +507,8 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
         <Account user={user} onUserUpdate={onUserUpdate} />
         <AIAssistant user={user} activeSymbol={activeSymbol} />
@@ -519,8 +525,28 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
         <SignalsPage priceData={signalsPriceDataReady ? signalsPriceData : []} />
+        <AIAssistant user={user} activeSymbol={activeSymbol} />
+      </div>
+    );
+  }
+
+  if (activeNavItem === "mentor") {
+    return (
+      <div className="dashboard-page">
+        <div className="dashboard-grid" />
+        <DashboardNav
+          user={user}
+          onLogout={onLogout}
+          activeNavItem={activeNavItem}
+          setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
+        />
+        <MentorApplication user={user} />
         <AIAssistant user={user} activeSymbol={activeSymbol} />
       </div>
     );
@@ -535,8 +561,10 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
-        <BAndP user={user} />
+        <BAndP user={user} onApplyMentor={openMentorApplication} />
         <AIAssistant user={user} activeSymbol={activeSymbol} />
       </div>
     );
@@ -551,6 +579,8 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
         <Analyze user={user} activeSymbol={activeSymbol} />
       </div>
@@ -566,8 +596,10 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
-        <CommunityPage user={user} />
+        <CommunityPage user={user} onApplyMentor={openMentorApplication} />
         <AIAssistant user={user} activeSymbol={activeSymbol} />
       </div>
     );
@@ -582,24 +614,10 @@ useLoginScreenshot();
           onLogout={onLogout}
           activeNavItem={activeNavItem}
           setActiveNavItem={setActiveNavItem}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
         <WatchLive />
-        <AIAssistant user={user} activeSymbol={activeSymbol} />
-      </div>
-    );
-  }
-
-  if (activeNavItem === "GLive") {
-    return (
-      <div className="dashboard-page">
-        <div className="dashboard-grid" />
-        <DashboardNav
-          user={user}
-          onLogout={onLogout}
-          activeNavItem={activeNavItem}
-          setActiveNavItem={setActiveNavItem}
-        />
-        <GoLive />
         <AIAssistant user={user} activeSymbol={activeSymbol} />
       </div>
     );
@@ -614,6 +632,8 @@ useLoginScreenshot();
         onLogout={onLogout}
         activeNavItem={activeNavItem}
         setActiveNavItem={setActiveNavItem}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
       <div className="welcome-banner">

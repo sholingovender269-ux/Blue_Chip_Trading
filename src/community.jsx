@@ -38,9 +38,8 @@ function canStillDelete(createdAt, now) {
   return now - new Date(createdAt).getTime() < DELETE_WINDOW_MS;
 }
 
-// Shown every time the Community page mounts — this is deliberately NOT
-// persisted to localStorage, so the person has to accept it again each
-// time they open the page, per the requirement.
+// Shown every time the Community page mounts — deliberately NOT persisted,
+// so the person has to accept it again each time they open the page.
 function GuidelinesModal({ onAgree }) {
   return (
     <div className="community-modal-overlay">
@@ -66,9 +65,7 @@ function GuidelinesModal({ onAgree }) {
   );
 }
 
-export default function CommunityPage({ user }) {
-  // Resets to false on every mount (i.e. every time the person navigates
-  // to Community), so the guidelines modal reappears each visit.
+export default function CommunityPage({ user, onApplyMentor }) {
   const [agreed, setAgreed] = useState(false);
 
   const [messages, setMessages] = useState([]);
@@ -79,8 +76,6 @@ export default function CommunityPage({ user }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  // Ticks every 30s purely to re-render so delete buttons disappear once
-  // a message crosses the 5-minute mark, without needing a refresh.
   const [nowTick, setNowTick] = useState(Date.now());
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
@@ -121,16 +116,15 @@ export default function CommunityPage({ user }) {
 
     fetchMessages();
 
-    // Realtime subscription — new messages push straight into state,
-    // and deletes (by this user or others, within their own window)
-    // remove the row from everyone's view live.
     const channel = supabase
       .channel("community_messages_changes")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "community_messages" },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
+          setMessages((prev) =>
+            prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]
+          );
           scrollToBottom();
         }
       )
@@ -180,22 +174,21 @@ export default function CommunityPage({ user }) {
       return;
     }
 
-    if (!user?.id) {
-      setError(
-        "You must be logged in to post. (No user id found — try logging out and back in.)"
-      );
-      return;
-    }
-
     setSending(true);
     setError(null);
 
     try {
+      const authUserId = user?.id ? String(user.id) : null;
+
+      if (!authUserId) {
+        throw new Error("You must be logged in to post. Log out and back in.");
+      }
+
       let imageUrl = null;
 
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
-        const path = `${user.id}/${Date.now()}.${ext}`;
+        const path = `${authUserId}/${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("community-images")
           .upload(path, imageFile);
@@ -213,8 +206,8 @@ export default function CommunityPage({ user }) {
       const { error: insertErr } = await supabase
         .from("community_messages")
         .insert({
-          user_id: user.id,
-          user_name: user.name || "Trader",
+          user_id: authUserId,
+          user_name: user?.name || "Trader",
           content: cleanContent,
           image_url: imageUrl,
         });
@@ -240,9 +233,6 @@ export default function CommunityPage({ user }) {
     setDeletingId(message.id);
     setError(null);
 
-    // Optimistic removal — the DB is still the source of truth (RLS
-    // policy enforces the 5-minute window server-side too), but this
-    // makes the click feel instant.
     const prevMessages = messages;
     setMessages((prev) => prev.filter((m) => m.id !== message.id));
 
@@ -274,6 +264,26 @@ export default function CommunityPage({ user }) {
       <div className="community-header">
         <h1>Community</h1>
         <span className="live-badge">● LIVE</span>
+        {onApplyMentor && (
+          <button
+            type="button"
+            className="community-apply-mentor-btn"
+            onClick={onApplyMentor}
+            title="Apply to become a mentor"
+            style={{
+              marginLeft: "auto",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "none",
+              background: "#1f6feb",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Become a Mentor — Apply Now
+          </button>
+        )}
       </div>
 
       <div className="community-feed" ref={scrollRef}>
@@ -284,7 +294,7 @@ export default function CommunityPage({ user }) {
         )}
 
         {messages.map((m) => {
-          const isOwn = m.user_id === user?.id;
+          const isOwn = !!user?.id && String(m.user_id) === String(user.id);
           const deletable = isOwn && canStillDelete(m.created_at, nowTick);
           return (
             <div key={m.id} className={`community-msg ${isOwn ? "own" : ""}`}>

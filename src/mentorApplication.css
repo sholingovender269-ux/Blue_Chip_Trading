@@ -1,0 +1,414 @@
+/* ============================================================
+   MENTOR APPLICATION
+   Uses the dashboard design tokens (landing.css), so dark/light
+   theme works automatically. Accent = brand green (--up).
+   To change the accent colour, edit --mentor-accent below.
+   ============================================================ */
+
+.mentor-page-wrap {
+  --mentor-accent:        var(--up);
+  --mentor-accent-dim:    var(--up-dim);
+  --mentor-accent-border: color-mix(in srgb, var(--up) 35%, transparent);
+  --mentor-field-bg:      rgba(255, 255, 255, 0.03);
+
+  padding: 56px 56px 72px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+:root[data-theme="light"] .mentor-page-wrap {
+  --mentor-field-bg: rgba(15, 23, 32, 0.03);
+}
+
+/* ── Card ─────────────────────────────────────────────── */
+
+.mentor-card {
+  --card-accent: var(--mentor-accent);
+  padding: 40px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.6);
+}
+
+/* top accent line + soft glow, same language as the stat cards */
+.mentor-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--mentor-accent), transparent);
+  opacity: 0.8;
+}
+
+.mentor-card::after {
+  content: "";
+  position: absolute;
+  top: -120px; right: -120px;
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, var(--mentor-accent-dim), transparent 70%);
+  pointer-events: none;
+}
+
+.mentor-card > * { position: relative; z-index: 1; }
+
+.mentor-card .card-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Intro ────────────────────────────────────────────── */
+
+.mentor-intro .card-header {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 14px;
+}
+
+.mentor-intro .card-header h2 {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  text-transform: none;
+  line-height: 1.1;
+}
+
+.mentor-intro .card-header h2::before { content: none; }
+
+.mentor-lead {
+  color: var(--text-mid);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 560px;
+  margin-bottom: 26px;
+}
+
+.mentor-perks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+
+.mentor-perks li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.95rem;
+  color: var(--text-bright);
+  padding: 14px 16px;
+  background: var(--mentor-field-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.18s;
+}
+
+.mentor-perks li::before {
+  content: "✓";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--mentor-accent);
+  background: var(--mentor-accent-dim);
+  border: 1px solid var(--mentor-accent-border);
+}
+
+.mentor-perks li:hover {
+  border-color: var(--mentor-accent-border);
+  transform: translateX(3px);
+}
+
+/* ── Form layout ──────────────────────────────────────── */
+
+.mentor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.mentor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  min-width: 0;
+}
+
+.mentor-full { margin-bottom: 18px; }
+
+.mentor-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* ── Inputs ───────────────────────────────────────────── */
+
+.mentor-input {
+  width: 100%;
+  background: var(--mentor-field-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-bright);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  padding: 12px 14px;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.mentor-input::placeholder { color: var(--text-muted); }
+
+.mentor-input:hover { border-color: var(--border-hover); }
+
+.mentor-input:focus {
+  outline: none;
+  border-color: var(--mentor-accent-border);
+  background: var(--mentor-accent-dim);
+  box-shadow: 0 0 0 3px var(--mentor-accent-dim);
+}
+
+select.mentor-input {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%239199a8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+select.mentor-input option {
+  background: var(--bg-card);
+  color: var(--text-bright);
+}
+
+.mentor-textarea {
+  resize: vertical;
+  min-height: 104px;
+  line-height: 1.55;
+}
+
+.mentor-count {
+  align-self: flex-end;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Chips ────────────────────────────────────────────── */
+
+.mentor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mentor-chip {
+  background: var(--mentor-field-bg);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  padding: 9px 18px;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mentor-chip:hover {
+  color: var(--text-bright);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.mentor-chip.active {
+  color: var(--mentor-accent);
+  background: var(--mentor-accent-dim);
+  border-color: var(--mentor-accent-border);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--mentor-accent) 18%, transparent);
+}
+
+/* ── Checkbox ─────────────────────────────────────────── */
+
+.mentor-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--text-mid);
+  margin: 6px 0 22px;
+  padding: 14px 16px;
+  background: var(--mentor-field-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.mentor-check:hover { border-color: var(--border-hover); }
+
+.mentor-check input {
+  accent-color: var(--mentor-accent);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ── Error ────────────────────────────────────────────── */
+
+.mentor-error {
+  background: var(--down-dim);
+  border: 1px solid rgba(255, 77, 106, 0.3);
+  border-left: 3px solid var(--down);
+  color: var(--down);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+
+.mentor-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.mentor-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  padding: 13px 28px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mentor-btn:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  color: var(--text-bright);
+  background: var(--mentor-field-bg);
+}
+
+/* solid green — matches the Sign Up / Apply Now buttons on the homepage */
+.mentor-btn.primary {
+  background: var(--mentor-accent);
+  border-color: var(--mentor-accent);
+  color: #04130d;
+  box-shadow: 0 8px 24px -10px var(--mentor-accent);
+}
+
+.mentor-btn.primary:hover:not(:disabled) {
+  background: var(--mentor-accent);
+  color: #04130d;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -10px var(--mentor-accent);
+}
+
+:root[data-theme="light"] .mentor-btn.primary,
+:root[data-theme="light"] .mentor-btn.primary:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.mentor-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Status pill ──────────────────────────────────────── */
+
+.mentor-status {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding: 7px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+}
+
+.mentor-status.pending  { color: var(--orange); background: var(--orange-dim); border-color: var(--orange-border); }
+.mentor-status.approved { color: var(--up);     background: var(--up-dim);     border-color: var(--mentor-accent-border); }
+.mentor-status.rejected { color: var(--down);   background: var(--down-dim);   border-color: rgba(255, 77, 106, 0.3); }
+
+/* ── Success ──────────────────────────────────────────── */
+
+.mentor-success {
+  text-align: center;
+  padding: 56px 40px;
+}
+
+.mentor-success .mentor-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mentor-success h3 {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin-bottom: 12px;
+}
+
+.mentor-success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 22px;
+  border-radius: 18px;
+  background: var(--mentor-accent-dim);
+  color: var(--mentor-accent);
+  border: 1px solid var(--mentor-accent-border);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--mentor-accent) 25%, transparent);
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+
+@media (max-width: 1280px) {
+  .mentor-page-wrap { padding-left: 32px; padding-right: 32px; }
+}
+
+@media (max-width: 700px) {
+  .mentor-page-wrap { padding: 32px 20px 48px; }
+  .mentor-card { padding: 26px 20px; border-radius: 16px; }
+  .mentor-intro .card-header h2 { font-size: 2rem; }
+  .mentor-grid { grid-template-columns: 1fr; }
+  .mentor-actions { flex-direction: column; align-items: stretch; }
+  .mentor-btn { text-align: center; }
+  .mentor-success { padding: 40px 20px; }
+}

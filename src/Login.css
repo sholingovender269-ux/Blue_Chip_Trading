@@ -2,9 +2,6 @@
 
 /* -----------------------------------------------------------
    1. The Main Page - Cinematic Depth & Dynamic Aura
-   We remove the flat black background and replace it with a deep,
-   gradient-shifted aura centered on the login card. This focus
-    light prevents the screen from feeling dead.
    ----------------------------------------------------------- */
 .login-page {
     min-height: 100vh;
@@ -36,9 +33,6 @@
 
 /* -----------------------------------------------------------
    2. The Card - Floating & Kinetic
-   Here we implement the 'boring' fix. We add a sharp kinetic glow
-   effect on hover and make the card float with refined perspective.
-   The inner glow adds data-stream energy.
    ----------------------------------------------------------- */
 .login-card {
     background: #0d1210; /* Deeper than card bg for contrast */
@@ -72,9 +66,7 @@
 }
 
 /* -----------------------------------------------------------
-   3. Typography & Header - Refined Logic
-   We change the flow from centered and weak to centered and strong.
-   The title gets proper weighting, and we use kinetic casing.
+   3. Typography & Header
    ----------------------------------------------------------- */
 .login-header {
     text-align: center;
@@ -83,7 +75,6 @@
     z-index: 2;
 }
 
-/* The Kinetic Logo style */
 .login-logo {
     font-size: 1.1rem;
     font-weight: 700;
@@ -130,8 +121,6 @@
 
 /* -----------------------------------------------------------
    4. Form & Inputs - Deep Glass & Focus Flow
-   Inputs were the weakest part of the design. Now they are deep,
-   frosted glass with clear, professional focus kinetic glows.
    ----------------------------------------------------------- */
 .login-form {
     display: flex;
@@ -182,7 +171,6 @@
 
 /* -----------------------------------------------------------
    5. Options - Unified Alignment
-   Moves the checkboxes and forgot password into a logical row.
    ----------------------------------------------------------- */
 .login-options {
     display: flex;
@@ -201,7 +189,6 @@
     font-weight: 500;
 }
 
-/* The kinetic checkbox itself */
 .checkbox input {
     accent-color: var(--primary);
     width: 17px;
@@ -209,9 +196,7 @@
     cursor: pointer;
 }
 
-/* forgot-link is a <button>, not an <a> — reset all button chrome first so
-   it doesn't inherit default border/background/font, then style it to
-   read clearly as a link-style action within the dark card. */
+/* forgot-link is a <button>, not an <a> — reset all button chrome first */
 .forgot-link {
     background: none;
     border: none;
@@ -245,8 +230,6 @@
 
 /* -----------------------------------------------------------
    6. Kinetic Button - Dynamic Activation
-   The main CTA gets a solid glow background, refined kinetic padding,
-   and a dynamic active state that feels responsive.
    ----------------------------------------------------------- */
 .login-btn {
     background: var(--primary);
@@ -265,7 +248,6 @@
     overflow: hidden;
 }
 
-/* Active State: The visual "pop" of activation */
 .login-btn:hover {
     background: var(--primary-hover);
     transform: translateY(-3px);
@@ -284,7 +266,7 @@
     box-shadow: none;
 }
 
-/* Add a kinetic 'sweep' light on hover */
+/* Kinetic 'sweep' light on hover */
 .login-btn::before {
     content: "";
     position: absolute;
@@ -295,6 +277,27 @@
 
 .login-btn:hover::before {
     left: 100%;
+}
+
+/* NEW: loading state used by login.jsx ("Signing in...") */
+.btn-loading {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, 0.25);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: login-spin 0.7s linear infinite;
+}
+
+@keyframes login-spin {
+    to { transform: rotate(360deg); }
 }
 
 .error-message {
@@ -308,9 +311,7 @@
     font-weight: 600;
 }
 
-/* Success state — same shape as error-message, teal instead of red, used
-   by the forgot/reset password pages to confirm an email was sent or a
-   password was updated. */
+/* Success state — used by the forgot/reset password pages */
 .success-message {
     color: var(--primary);
     background: rgba(0, 201, 167, 0.08);
@@ -324,8 +325,6 @@
 
 /* -----------------------------------------------------------
    7. Footer - Modern Secondary Actions
-   We refine the "boring" signup text link and convert the
-   Back button into a subtle kinetic action that matches the brand.
    ----------------------------------------------------------- */
 .login-footer {
     text-align: center;
@@ -353,7 +352,6 @@
     text-decoration: underline;
 }
 
-/* Kinetic Separator data-wire */
 .login-footer hr {
     border: none;
     border-top: 1px solid var(--border);
@@ -363,7 +361,6 @@
 
 /* -----------------------------------------------------------
    8. Kinetic Back Button - Clean Flow
-   Replacing the weak button style with a refined kinetic action
    ----------------------------------------------------------- */
 .demo-btn {
     background: rgba(255, 255, 255, 0.02);
@@ -406,6 +403,7 @@
         align-items: flex-start;
     }
 }
+
 /* -----------------------------------------------------------
    9. Role Selector
    ----------------------------------------------------------- */

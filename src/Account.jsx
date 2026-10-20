@@ -18,10 +18,16 @@ function formatDate(iso) {
 export default function Account({ user, onUserUpdate }) {
   const [activeTab, setActiveTab] = useState("profile");
 
-  // ── Profile (name) ──
-  const [name, setName] = useState(user?.name || "");
-  const [savingName, setSavingName] = useState(false);
-  const [nameMessage, setNameMessage] = useState(null);
+  // ── Profile (name, bio, avatar) ──
+  const [firstName, setFirstName] = useState(user?.first_name || user?.name?.split(" ")[0] || "");
+  const [lastName, setLastName] = useState(
+    user?.last_name || user?.name?.split(" ").slice(1).join(" ") || ""
+  );
+  const [bio, setBio] = useState(user?.bio || "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.profile_picture_url || "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState(null);
 
   // ── Password ──
   const [currentPassword, setCurrentPassword] = useState("");
@@ -36,8 +42,11 @@ export default function Account({ user, onUserUpdate }) {
   const [historyError, setHistoryError] = useState(null);
 
   useEffect(() => {
-    setName(user?.name || "");
-  }, [user?.name]);
+    setFirstName(user?.first_name || user?.name?.split(" ")[0] || "");
+    setLastName(user?.last_name || user?.name?.split(" ").slice(1).join(" ") || "");
+    setBio(user?.bio || "");
+    setAvatarUrl(user?.profile_picture_url || "");
+  }, [user?.first_name, user?.last_name, user?.name, user?.bio, user?.profile_picture_url]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,39 +74,96 @@ export default function Account({ user, onUserUpdate }) {
     };
   }, []);
 
-  const handleSaveName = async (e) => {
-    e.preventDefault();
-    if (!name.trim() || savingName) return;
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !user?.email) return;
 
-    setSavingName(true);
-    setNameMessage(null);
+    setUploadingAvatar(true);
+    setProfileMessage(null);
     try {
-      const { data: userData, error: authError } = await supabase.auth.getUser();
-      const authUser = userData?.user;
-      if (authError || !authUser) throw new Error("Not signed in");
+      const ext = file.name.split(".").pop();
+      // Use email rather than user.id as the storage path key, since
+      // user.id (the Supabase Auth uid) does not match clients.id.
+      const safeKey = user.email.toLowerCase();
+      const path = `${safeKey}/avatar.${ext}`;
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { name: name.trim() },
-      });
-      if (updateError) throw updateError;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
 
-      // Keep the profiles table (if you have one) in sync too.
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ name: name.trim() })
-        .eq("id", authUser.id);
-      if (profileError) {
-        // Not fatal — auth metadata already updated — but surface it.
-        console.warn("Profile table update failed:", profileError.message);
+      const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const newUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`; // cache-bust
+
+      // clients.id is its own generated UUID, NOT the auth user id, so we
+      // match on email (unique in the clients table) instead of id.
+      const { data: updatedRows, error: dbError } = await supabase
+        .from("clients")
+        .update({ profile_picture_url: newUrl })
+        .eq("email", user.email)
+        .select();
+      if (dbError) throw dbError;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error("No matching client row found for this email — nothing was saved.");
       }
 
-      onUserUpdate?.({ ...user, name: name.trim() });
-      setNameMessage({ type: "success", text: "Name updated." });
+      setAvatarUrl(newUrl);
+      onUserUpdate?.({ ...user, profile_picture_url: newUrl });
+      setProfileMessage({ type: "success", text: "Photo updated." });
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      setProfileMessage({ type: "error", text: err.message || "Photo upload failed." });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (savingProfile || !user?.email) return;
+
+    setSavingProfile(true);
+    setProfileMessage(null);
+    try {
+      const fullName = `${firstName} ${lastName}`.trim();
+
+      // clients.id is its own generated UUID, NOT the auth user id, so we
+      // match on email (unique in the clients table) instead of id.
+      const { data: updatedRows, error: dbError } = await supabase
+        .from("clients")
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          bio: bio.trim(),
+        })
+        .eq("email", user.email)
+        .select();
+      if (dbError) throw dbError;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error("No matching client row found for this email — nothing was saved.");
+      }
+
+      // Keep auth metadata's display name in sync too, if used elsewhere.
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { name: fullName },
+      });
+      if (authError) {
+        console.warn("Auth metadata update failed:", authError.message);
+      }
+
+      onUserUpdate?.({
+        ...user,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        name: fullName,
+        bio: bio.trim(),
+      });
+      setProfileMessage({ type: "success", text: "Profile updated." });
     } catch (err) {
       console.error(err);
-      setNameMessage({ type: "error", text: err.message || "Failed to update name" });
+      setProfileMessage({ type: "error", text: err.message || "Failed to update profile" });
     } finally {
-      setSavingName(false);
+      setSavingProfile(false);
     }
   };
 
@@ -182,15 +248,47 @@ export default function Account({ user, onUserUpdate }) {
             <h2>Profile</h2>
           </div>
 
-          <form className="account-form" onSubmit={handleSaveName}>
-            <div className="account-field">
-              <label>Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-              />
+          <div className="account-avatar-row">
+            <img
+              src={avatarUrl || "/default-avatar.png"}
+              alt="Profile"
+              className="account-avatar-img"
+            />
+            <div className="account-avatar-actions">
+              <label className="account-btn account-btn-secondary account-upload-btn">
+                {uploadingAvatar ? "Uploading…" : "Change photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={uploadingAvatar}
+                  style={{ display: "none" }}
+                />
+              </label>
+              <span className="account-field-hint">JPG or PNG, square images look best.</span>
+            </div>
+          </div>
+
+          <form className="account-form" onSubmit={handleSaveProfile}>
+            <div className="account-field-row">
+              <div className="account-field">
+                <label>First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="First name"
+                />
+              </div>
+              <div className="account-field">
+                <label>Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Last name"
+                />
+              </div>
             </div>
 
             <div className="account-field">
@@ -204,12 +302,28 @@ export default function Account({ user, onUserUpdate }) {
               <input type="text" value={user?.idNumber || ""} disabled />
             </div>
 
-            {nameMessage && (
-              <div className={`account-message ${nameMessage.type}`}>{nameMessage.text}</div>
+            <div className="account-field">
+              <label>Bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself..."
+                rows={4}
+                maxLength={500}
+              />
+              <span className="account-field-hint">{bio.length}/500</span>
+            </div>
+
+            {profileMessage && (
+              <div className={`account-message ${profileMessage.type}`}>{profileMessage.text}</div>
             )}
 
-            <button className="account-btn account-btn-primary" type="submit" disabled={savingName}>
-              {savingName ? "Saving…" : "Save Changes"}
+            <button
+              className="account-btn account-btn-primary"
+              type="submit"
+              disabled={savingProfile}
+            >
+              {savingProfile ? "Saving…" : "Save Changes"}
             </button>
           </form>
         </div>

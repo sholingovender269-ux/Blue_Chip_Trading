@@ -1,0 +1,227 @@
+.admin-community-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.community-card {
+  padding: 20px;
+}
+
+.community-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.community-header h2 {
+  margin: 0;
+}
+
+.community-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.community-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.community-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.community-refresh-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.community-refresh-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+}
+
+.community-error {
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-size: 0.85rem;
+}
+
+.community-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.community-empty {
+  text-align: center;
+  padding: 30px 12px;
+  opacity: 0.6;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.community-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.community-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.community-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.community-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.community-user {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.community-content {
+  margin: 0 0 8px 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.community-thumb {
+  max-width: 220px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  object-fit: cover;
+  cursor: zoom-in;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.community-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+}
+
+.community-delete-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  height: fit-content;
+}
+
+.community-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.community-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.community-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.community-page-controls button {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.community-page-controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+.small { font-size: 0.78rem; }
+.muted { opacity: 0.55; }
+
+.community-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: zoom-out;
+}
+
+.community-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+}

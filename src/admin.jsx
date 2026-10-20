@@ -3,6 +3,9 @@ import "./admin.css";
 import { supabase } from "./supabaseClient";
 import ClientsPage from "./adminClients.jsx";
 import SignalsAdminPage from "./adminSignals.jsx";
+import AdminTradesPage from "./adminTrades.jsx";
+import AdminCommunityPage from "./adminCommunity.jsx";
+import ReviewApplication from "./reviewApplication.jsx";
 
 // ── Nav config ──────────────────────────────────────────────────
 
@@ -10,10 +13,9 @@ const ADMIN_NAV_ITEMS = [
   { label: "Overview",  value: "overview"  },
   { label: "Clients",   value: "clients"   },
   { label: "Signals",   value: "signals"   },
-  { label: "Live",      value: "live"      },
-  { label: "Partners",  value: "partners"  },
   { label: "Community", value: "community" },
-  { label: "Settings",  value: "settings"  },
+  { label: "Demo Trades",  value: "demoTrades"  },
+  { label: "Mentor Applications",  value: "mentorApplications"  },
 ];
 
 // ── Shared bits ───────────────────────────────────────────────────
@@ -154,8 +156,10 @@ export default function Admin({ admin, onLogout }) {
       case "signals":  return <SignalsAdminPage />;
       case "live":     return <PlaceholderPage title="Live" />;
       case "partners": return <PlaceholderPage title="Partners" />;
-      case "community":return <PlaceholderPage title="Community" />;
+      case "community":return <AdminCommunityPage />;
       case "settings": return <PlaceholderPage title="Settings" />;
+      case "demoTrades": return <AdminTradesPage />;
+      case "mentorApplications": return <ReviewApplication />;
       default: return <OverviewPage />;
     }
   };

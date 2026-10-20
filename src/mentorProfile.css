@@ -1,0 +1,179 @@
+/* Mentor profile. Override these variables to match your theme. */
+.mp-card {
+  --mp-bg: var(--card-bg, #111a2e);
+  --mp-border: var(--border, rgba(255, 255, 255, 0.08));
+  --mp-text: var(--text, #e8edf7);
+  --mp-muted: var(--text-muted, #8b97b1);
+  --mp-accent: var(--accent, #3b82f6);
+  --mp-input-bg: rgba(255, 255, 255, 0.04);
+
+  background: var(--mp-bg);
+  border: 1px solid var(--mp-border);
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 760px;
+  color: var(--mp-text);
+}
+
+.mp-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--mp-border);
+}
+
+.mp-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--mp-accent);
+  flex-shrink: 0;
+}
+
+.mp-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--mp-input-bg);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--mp-accent);
+}
+
+.mp-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.mp-hint {
+  font-size: 12px;
+  color: var(--mp-muted);
+}
+
+.mp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.mp-full {
+  grid-column: 1 / -1;
+}
+
+.mp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mp-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mp-muted);
+}
+
+.mp-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  background: var(--mp-input-bg);
+  border: 1px solid var(--mp-border);
+  border-radius: 10px;
+  color: var(--mp-text);
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+
+.mp-input:focus {
+  outline: none;
+  border-color: var(--mp-accent);
+}
+
+.mp-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mp-input option {
+  color: #111;
+}
+
+.mp-textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.mp-count {
+  align-self: flex-end;
+  font-size: 12px;
+  color: var(--mp-muted);
+}
+
+.mp-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.mp-btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.mp-btn-primary {
+  background: var(--mp-accent);
+  color: #fff;
+  border: none;
+}
+
+.mp-btn-outline {
+  background: transparent;
+  color: var(--mp-text);
+  border: 1px solid var(--mp-border);
+}
+
+.mp-btn-outline:hover {
+  border-color: var(--mp-accent);
+}
+
+.mp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mp-status {
+  font-size: 14px;
+  color: #34d399;
+}
+
+.mp-status-error {
+  color: #f87171;
+}
+
+@media (max-width: 640px) {
+  .mp-card {
+    padding: 20px;
+  }
+  .mp-grid {
+    grid-template-columns: 1fr;
+  }
+  .mp-avatar-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
