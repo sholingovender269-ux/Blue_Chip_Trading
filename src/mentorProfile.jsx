@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import "./mentorProfile.css";
 
@@ -15,17 +15,72 @@ export default function MentorProfile({ user, onUserUpdate }) {
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState({ text: "", error: false });
 
+  // Works whether the logged-in object stores the key as id, mentor_id or user_id
+  const mentorId = user?.id ?? user?.mentor_id ?? user?.user_id;
+
   const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || "M";
+
+  // On load/refresh, pull the saved profile from the database so the photo
+  // and fields persist even if the stored login object is stale.
+  useEffect(() => {
+    if (!mentorId) return;
+    let cancelled = false;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("mentors")
+        .select("first_name, last_name, trading_style, years_trading, bio, profile_picture_url")
+        .eq("id", mentorId)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (error) {
+        console.error("Profile load failed:", error);
+        return;
+      }
+      if (!data) return;
+
+      setFirstName(data.first_name || "");
+      setLastName(data.last_name || "");
+      setTradingStyle(data.trading_style || "");
+      setYears(data.years_trading ?? "");
+      setBio(data.bio || "");
+      setAvatarUrl(data.profile_picture_url || "");
+
+      // Sync the app-level user (navbar, localStorage, etc.) with the database
+      onUserUpdate?.({
+        ...user,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        trading_style: data.trading_style,
+        years_trading: data.years_trading,
+        bio: data.bio,
+        profile_picture_url: data.profile_picture_url,
+        name: `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mentorId]);
 
   async function handleAvatarChange(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!mentorId) {
+      setStatus({ text: "Could not find your mentor ID. Please log in again.", error: true });
+      return;
+    }
+
     setUploading(true);
     setStatus({ text: "", error: false });
     try {
       const ext = file.name.split(".").pop();
-      const path = `mentors/${user.id}/avatar.${ext}`;
+      // Mentors upload under their own "mentors/" folder (covered by the mentors storage policy)
+      const path = `mentors/${mentorId}/avatar.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
@@ -35,18 +90,22 @@ export default function MentorProfile({ user, onUserUpdate }) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
       const newUrl = `${data.publicUrl}?t=${Date.now()}`; // cache-bust
 
-      const { error: dbError } = await supabase
+      const { data: updated, error: dbError } = await supabase
         .from("mentors")
         .update({ profile_picture_url: newUrl })
-        .eq("id", user.id);
+        .eq("id", mentorId)
+        .select("id");
       if (dbError) throw dbError;
+      if (!updated || updated.length === 0) {
+        throw new Error("No mentor row was updated. Check the ID and the table's update policy (RLS).");
+      }
 
       setAvatarUrl(newUrl);
       onUserUpdate?.({ ...user, profile_picture_url: newUrl });
       setStatus({ text: "Photo updated.", error: false });
     } catch (err) {
       console.error("Avatar upload failed:", err);
-      setStatus({ text: "Photo upload failed. Please try again.", error: true });
+      setStatus({ text: `Photo upload failed: ${err.message || "unknown error"}`, error: true });
     } finally {
       setUploading(false);
     }
@@ -57,6 +116,11 @@ export default function MentorProfile({ user, onUserUpdate }) {
       setStatus({ text: "First name is required.", error: true });
       return;
     }
+    if (!mentorId) {
+      setStatus({ text: "Could not find your mentor ID. Please log in again.", error: true });
+      return;
+    }
+
     setSaving(true);
     setStatus({ text: "", error: false });
     try {
@@ -69,18 +133,26 @@ export default function MentorProfile({ user, onUserUpdate }) {
         bio,
       };
 
-      const { error } = await supabase.from("mentors").update(updates).eq("id", user.id);
+      const { data: updated, error } = await supabase
+        .from("mentors")
+        .update(updates)
+        .eq("id", mentorId)
+        .select("id");
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        throw new Error("No mentor row was updated. Check the ID and the table's update policy (RLS).");
+      }
 
       onUserUpdate?.({
         ...user,
         ...updates,
+        profile_picture_url: avatarUrl || user?.profile_picture_url,
         name: `${updates.first_name} ${updates.last_name || ""}`.trim(),
       });
       setStatus({ text: "Profile saved.", error: false });
     } catch (err) {
       console.error("Profile save failed:", err);
-      setStatus({ text: "Save failed. Please try again.", error: true });
+      setStatus({ text: `Save failed: ${err.message || "unknown error"}`, error: true });
     } finally {
       setSaving(false);
     }

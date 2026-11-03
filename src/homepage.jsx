@@ -14,25 +14,32 @@ const MODULES = [
 ];
 
 function useCounter(target, duration = 1800) {
-  const [display, setDisplay] = useState("0");
+  // Values with no digits (e.g. "Live") are shown as-is, with no count-up.
+  const hasNumber = /\d/.test(target);
+  const suffix = target.replace(/[0-9.,]/g, "");
+  const [display, setDisplay] = useState(hasNumber ? `0${suffix}` : target);
   const ref = useRef(null);
   const started = useRef(false);
+  const timer = useRef(null);
 
   useEffect(() => {
+    if (!hasNumber) {
+      setDisplay(target);
+      return undefined;
+    }
     const observer = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting && !started.current) {
           started.current = true;
           const num = parseFloat(target.replace(/[^0-9.]/g, ""));
-          const suffix = target.replace(/[0-9.,]/g, "");
           let i = 0;
           const steps = 60;
-          const iv = setInterval(() => {
+          timer.current = setInterval(() => {
             i++;
-            setDisplay(Math.floor((num / steps) * i) + suffix);
+            setDisplay(Math.floor((num / steps) * i).toLocaleString("en-US") + suffix);
             if (i >= steps) {
               setDisplay(target);
-              clearInterval(iv);
+              clearInterval(timer.current);
             }
           }, duration / steps);
         }
@@ -40,8 +47,11 @@ function useCounter(target, duration = 1800) {
       { threshold: 0.3 }
     );
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target, duration]);
+    return () => {
+      observer.disconnect();
+      if (timer.current) clearInterval(timer.current);
+    };
+  }, [target, duration, hasNumber, suffix]);
 
   return [display, ref];
 }
@@ -68,9 +78,8 @@ function FAQItem({ question, answer, isOpen, onClick }) {
   );
 }
 
-/* --- NEW: lightweight 3D tilt-on-hover wrapper (visual only, no
-   functional change — just tracks the mouse and sets CSS vars that
-   the .term-frame--panel CSS uses to rotate/glow toward the cursor) --- */
+/* Lightweight 3D tilt-on-hover (visual only). Tracks the mouse and sets
+   CSS vars that .term-frame--tilt uses to rotate/glow toward the cursor. */
 function useTilt() {
   const ref = useRef(null);
 
@@ -166,13 +175,13 @@ function TerminalPanel() {
   );
 }
 
-export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) {
+export default function Academy({ onLoginClick, onSignupClick, onMentorClick, onAdminClick }) {
   const { t } = useTranslation();
   const [openFaq, setOpenFaq] = useState(null);
   const toggleFaq = (i) => setOpenFaq(openFaq === i ? null : i);
 
   const handleSignup = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (onSignupClick) onSignupClick();
   };
 
@@ -182,8 +191,14 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) 
     if (onMentorClick) onMentorClick();
   };
 
-  /* --- NEW: cursor-follow spotlight glow across the whole page.
-     Purely decorative — sets CSS vars consumed by .bg-cursor-glow. --- */
+  // Opens the admin sign-in page (nav button)
+  const handleAdmin = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (onAdminClick) onAdminClick();
+  };
+
+  /* Cursor-follow spotlight glow across the whole page.
+     Purely decorative: sets CSS vars consumed by .bg-cursor-glow. */
   const pageRef = useRef(null);
   useEffect(() => {
     const handlePointerMove = (e) => {
@@ -223,6 +238,9 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) 
           <a href="#">{t("nav.pricing")}</a>
         </div>
         <div className="nav-right">
+          <a href="#admin" className="nav-admin" onClick={handleAdmin}>
+            🔒 Admin
+          </a>
           <a href="#" className="nav-careers" onClick={handleMentor}>
             {t("nav.becomeMentor")}
           </a>
@@ -299,7 +317,7 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) 
       <section className="section team-section">
         <div className="team-container">
           <div className="team-image-side">
-            <img src="team-member.jpg" alt="Founders" className="team-main-img" />
+            <img src="/team-member.jpg" alt="Founders" className="team-main-img" />
             <div className="team-img-accent"></div>
           </div>
           <div className="team-text-side">
@@ -442,6 +460,7 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick }) 
           </button>
         </div>
       </section>
+
     </div>
   );
 }

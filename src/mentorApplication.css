@@ -157,6 +157,14 @@
   font-family: var(--font-mono);
 }
 
+/* "(7/13)" counter next to the ID number label */
+.mentor-label-count {
+  margin-left: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
 /* ── Inputs ───────────────────────────────────────────── */
 
 .mentor-input {
@@ -180,6 +188,40 @@
   border-color: var(--mentor-accent-border);
   background: var(--mentor-accent-dim);
   box-shadow: 0 0 0 3px var(--mentor-accent-dim);
+}
+
+/* invalid state (ID number) */
+.mentor-input.invalid,
+.mentor-input.invalid:hover {
+  border-color: rgba(255, 77, 106, 0.55);
+  background: var(--down-dim);
+}
+
+.mentor-input.invalid:focus {
+  border-color: var(--down);
+  box-shadow: 0 0 0 3px var(--down-dim);
+}
+
+.mentor-field-error {
+  color: var(--down);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* privacy note under the ID number */
+.mentor-secure {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--mentor-accent-dim);
+  border: 1px solid var(--mentor-accent-border);
+  color: var(--text-mid);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 select.mentor-input {

@@ -79,6 +79,7 @@
   font-family: var(--font-mono);
   color: var(--text-mid);
   font-size: 0.9rem;
+  line-height: 1.6;
   padding: 40px 0;
   text-align: center;
 }
@@ -120,7 +121,7 @@
   color: var(--text-mid);
 }
 
-/* Page sections: AI signal, then mentor signals */
+/* Page sections: AI signal, mentor signals, news signal */
 .signals-section {
   margin-bottom: 44px;
 }
@@ -530,6 +531,7 @@
   font-size: 0.72rem;
   color: var(--text-muted);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Card accent by status */
@@ -546,6 +548,7 @@
   border: 1px solid color-mix(in srgb, var(--tone) 40%, transparent);
   border-left: 3px solid var(--tone);
   background: color-mix(in srgb, var(--tone) 10%, transparent);
+  transition: border-color 0.3s, background 0.3s;
 }
 
 .trade-status.enter { --tone: var(--up); }
@@ -620,11 +623,42 @@
 }
 
 .trade-status-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 12px;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   line-height: 1.5;
   color: var(--text-muted);
+}
+
+.trade-status-note.stale {
+  color: var(--orange);
+}
+
+/* Pulsing "live" dot */
+.live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--up);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 60%, transparent);
+  animation: live-pulse 1.8s ease-out infinite;
+  flex-shrink: 0;
+}
+
+.live-dot.stale {
+  background: var(--orange);
+  animation: none;
+}
+
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 55%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
 
 /* Price ladder */
@@ -671,6 +705,7 @@
   transform: translateX(-50%);
   background: var(--tone);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 30%, transparent);
+  transition: left 0.6s ease;
 }
 
 .ladder-price.enter { --tone: var(--up); }
@@ -727,6 +762,54 @@
   color: var(--text-muted);
 }
 
+/* ── News signal ──────────────────────────────────────────────────── */
+
+.news-section .section-title::before {
+  color: var(--orange);
+}
+
+.news-event-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--orange);
+  border-radius: 12px;
+}
+
+.news-event-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.news-event-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-bright);
+}
+
+.news-event-when {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.news-risk-note {
+  max-width: 460px;
+  margin: 18px auto 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* ── Mobile ── */
 @media (max-width: 700px) {
   .signals-page {
@@ -740,9 +823,28 @@
   .econ-event-date { grid-column: 2; align-items: flex-start; text-align: left; }
   .econ-countdown { grid-column: 1 / -1; justify-self: start; }
 
+  .news-event-banner {
+    grid-template-columns: auto 1fr;
+    row-gap: 10px;
+  }
+  .news-event-banner .econ-countdown {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
   .signal-controls { width: 100%; justify-content: space-between; }
   .refresh-text { display: none; }
   .refresh-btn { padding: 10px 12px; }
   .signal-featured { padding: 20px; }
   .trade-stats { gap: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .refresh-btn.spinning .refresh-icon {
+    animation: none;
+  }
+  .ladder-price {
+    transition: none;
+  }
 }

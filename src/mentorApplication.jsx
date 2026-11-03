@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   full_name: "",
   email: "",
   phone: "",
+  id_number: "",
   country: "",
   years_trading: "",
   markets: [],
@@ -34,13 +35,55 @@ function toggleInList(list, value) {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
+/**
+ * Validates a South African ID number (YYMMDDSSSSCAZ).
+ * Returns an error string if invalid, or "" if valid.
+ *  - 13 digits
+ *  - first 6 digits are a real date of birth (not in the future)
+ *  - 11th digit (citizenship) is 0 or 1
+ *  - 13th digit passes the Luhn checksum
+ * The database runs the same checks again before storing anything.
+ */
+function validateSAId(id) {
+  if (!/^\d{13}$/.test(id)) return "ID must be 13 digits";
+
+  const yy = parseInt(id.slice(0, 2), 10);
+  const mm = parseInt(id.slice(2, 4), 10);
+  const dd = parseInt(id.slice(4, 6), 10);
+
+  let year = 2000 + yy;
+  if (new Date(year, mm - 1, dd) > new Date()) year = 1900 + yy;
+
+  const dob = new Date(year, mm - 1, dd);
+  const validDate =
+    dob.getFullYear() === year && dob.getMonth() === mm - 1 && dob.getDate() === dd;
+  if (!validDate) return "ID contains an invalid date of birth";
+
+  if (id[10] !== "0" && id[10] !== "1") return "Invalid ID number";
+
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    let digit = parseInt(id[12 - i], 10);
+    if (i % 2 === 1) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+  if (sum % 10 !== 0) return "Invalid ID number";
+
+  return "";
+}
+
 export default function MentorApplication({ user }) {
   const [view, setView] = useState("intro"); // intro | form | done | existing
   const [form, setForm] = useState({
     ...EMPTY_FORM,
     full_name: user?.name || "",
     email: user?.email || "",
+    id_number: (user?.idNumber || "").replace(/\D/g, "").slice(0, 13),
   });
+  const [idTouched, setIdTouched] = useState(false);
   const [existing, setExisting] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -68,9 +111,26 @@ export default function MentorApplication({ user }) {
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
+  // ID number: digits only, capped at 13
+  const handleIdChange = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 13);
+    set("id_number", digitsOnly);
+  };
+
+  const idError =
+    form.id_number.length === 0
+      ? idTouched
+        ? "ID number is required"
+        : ""
+      : form.id_number.length === 13 || idTouched
+      ? validateSAId(form.id_number)
+      : "";
+
   const validate = () => {
     if (!form.full_name.trim()) return "Full name is required.";
     if (!/^\S+@\S+\.\S+$/.test(form.email)) return "Enter a valid email address.";
+    const idProblem = validateSAId(form.id_number);
+    if (idProblem) return `ID number: ${idProblem.charAt(0).toLowerCase()}${idProblem.slice(1)}.`;
     if (!form.country.trim()) return "Country is required.";
     if (form.years_trading === "" || Number(form.years_trading) < 0) return "Enter your years of trading experience.";
     if (form.markets.length === 0) return "Select at least one market you trade.";
@@ -107,6 +167,7 @@ export default function MentorApplication({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIdTouched(true);
     const problem = validate();
     if (problem) {
       setError(problem);
@@ -114,36 +175,49 @@ export default function MentorApplication({ user }) {
     }
 
     setSubmitting(true);
-    const payload = {
-      user_id: user?.id ?? null,
-      full_name: form.full_name.trim(),
-      email: form.email.trim().toLowerCase(),
-      phone: form.phone.trim() || null,
-      country: form.country.trim(),
-      years_trading: Number(form.years_trading),
-      markets: form.markets,
-      trading_style: form.trading_style,
-      track_record: form.track_record.trim() || null,
-      proof_url: form.proof_url.trim() || null,
-      social_url: form.social_url.trim() || null,
-      availability: form.availability,
-      bio: form.bio.trim(),
-      motivation: form.motivation.trim(),
-      status: "pending",
-    };
+    const name = form.full_name.trim();
+    const email = form.email.trim().toLowerCase();
 
-    const { error: err } = await supabase.from("mentor_applications").insert([payload]);
+    // The database validates the ID, hashes it (HMAC-SHA256 + secret pepper)
+    // and stores only the hash. The raw ID number is never saved.
+    const { error: err } = await supabase.rpc("submit_mentor_application", {
+      p_user_id: user?.id ?? null,
+      p_full_name: name,
+      p_email: email,
+      p_phone: form.phone.trim() || null,
+      p_country: form.country.trim(),
+      p_years_trading: Number(form.years_trading),
+      p_markets: form.markets,
+      p_trading_style: form.trading_style,
+      p_track_record: form.track_record.trim() || null,
+      p_proof_url: form.proof_url.trim() || null,
+      p_social_url: form.social_url.trim() || null,
+      p_availability: form.availability,
+      p_bio: form.bio.trim(),
+      p_motivation: form.motivation.trim(),
+      p_id_number: form.id_number,
+    });
 
     if (err) {
       setSubmitting(false);
-      console.error("Mentor application error:", err);
-      setError("Something went wrong submitting your application. Please try again.");
+      // Never log the form: it contains the ID number.
+      console.error("Mentor application error:", err.message);
+      const msg = err.message || "";
+      if (msg.includes("duplicate_id_number")) {
+        setError("An application with this ID number has already been submitted.");
+      } else if (msg.includes("invalid_id_number")) {
+        setError("That ID number is not valid. Please check it and try again.");
+      } else {
+        setError("Something went wrong submitting your application. Please try again.");
+      }
       return;
     }
 
     // Application saved → send the confirmation email
-    await sendConfirmationEmail(payload.full_name, payload.email);
+    await sendConfirmationEmail(name, email);
 
+    // Don't keep the ID number in memory once it has been submitted
+    set("id_number", "");
     setSubmitting(false);
     setView("done");
   };
@@ -247,6 +321,28 @@ export default function MentorApplication({ user }) {
             </select>
           </label>
         </div>
+
+        <label className="mentor-field mentor-full">
+          <span className="mentor-label">
+            ID Number *
+            <span className="mentor-label-count">({form.id_number.length}/13)</span>
+          </span>
+          <input
+            name="id_number"
+            className={`mentor-input ${idError ? "invalid" : ""}`}
+            placeholder="13-digit SA ID"
+            value={form.id_number}
+            onChange={handleIdChange}
+            onBlur={() => setIdTouched(true)}
+            maxLength={13}
+            inputMode="numeric"
+            autoComplete="off"
+          />
+          {idError && <span className="mentor-field-error">{idError}</span>}
+          <span className="mentor-secure">
+             Your ID number is converted to a one-way hash before it is saved. We never store the number itself.
+          </span>
+        </label>
 
         <div className="mentor-field mentor-full">
           <span className="mentor-label">Markets You Trade *</span>

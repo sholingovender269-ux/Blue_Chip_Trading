@@ -3,124 +3,117 @@ import emailjs from "@emailjs/browser";
 import "./Verification.css";
 import { supabase } from "./supabaseClient";
 
-const STEPS = [
-  { at: 0,  label: "Connecting to server..." },
-  { at: 4,  label: "Establishing secure connection..." },
-  { at: 8,  label: "Connecting to bank..." },
-  { at: 12, label: "Authenticating credentials..." },
-  { at: 16, label: "Pending approval..." },
-  { at: 20, label: "Approved ✓" },
-  { at: 22, label: "Creating account..." },
-  { at: 26, label: "Sending confirmation email..." },
-  { at: 29, label: "Verification complete." },
-];
+const EMAILJS_SERVICE_ID = "service_6e2lrip";
+const EMAILJS_TEMPLATE_ID = "template_5d2o1yi";
+const EMAILJS_PUBLIC_KEY = "iJf91K9SaKpnpTDzB";
 
-export default function Verification({ name, email, user, address, onComplete }) {
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [status, setStatus] = useState("Processing");
-  const [stepLabel, setStepLabel] = useState(STEPS[0].label);
-  const emailSentRef = useRef(false);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  const nameRef = useRef(name);
-  const emailRef = useRef(email);
-  const addressRef = useRef(address);
-
-  useEffect(() => { nameRef.current = name; }, [name]);
-  useEffect(() => { emailRef.current = email; }, [email]);
-  useEffect(() => { addressRef.current = address; }, [address]);
-
-  const sendEmail = async () => {
-    if (!nameRef.current || !emailRef.current) {
-      console.error("❌ Missing name or email — aborting.");
-      return;
-    }
-
-    const today = new Date();
-    const nextBilling = new Date(today);
-    nextBilling.setDate(today.getDate() + 30);
-
-    const formatDate = (date) =>
-      date.toLocaleDateString("en-ZA", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-
+// Sends the email with up to 3 attempts and returns { ok, error }
+async function sendWelcomeEmail(params) {
+  let lastError = "";
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await emailjs.send(
-        "service_6e2lrip",
-        "template_5d2o1yi",
-        {
-          to_name: nameRef.current,
-          to_email: emailRef.current,
-          payment_date: formatDate(today),
-          next_billing_date: formatDate(nextBilling),
-        },
-        "iJf91K9SaKpnpTDzB"
+        EMAILJS_SERVICE_ID.trim(),
+        EMAILJS_TEMPLATE_ID.trim(),
+        params,
+        { publicKey: EMAILJS_PUBLIC_KEY.trim() }
       );
-      console.log("✅ Email sent:", res.status);
+      console.log("EmailJS success:", res.status, res.text);
+      return { ok: true };
     } catch (err) {
-      console.error("❌ Email failed:", err);
+      const status = err?.status;
+      const text = err?.text || err?.message || String(err);
+      lastError = status ? `${status}: ${text}` : "Blocked or network error (check ad-blocker)";
+      console.error(`EmailJS attempt ${attempt} failed:`, status, text, err);
+      if (status && status >= 400 && status < 500 && status !== 429) break;
+      await sleep(1000 * attempt);
     }
-  };
+  }
+  return { ok: false, error: lastError };
+}
 
-  const saveAddress = async () => {
-    const email = emailRef.current;
-    const addr = addressRef.current;
+export default function Verification({ sessionId, onComplete }) {
+  const [status, setStatus] = useState("Processing");
+  const [message, setMessage] = useState("Confirming your payment...");
+  const [info, setInfo] = useState({ name: "", email: "" });
+  const [emailStatus, setEmailStatus] = useState("—");
+  const ranRef = useRef(false);
 
-    console.log("Saving address:", addr, "for email:", email);
-
-    if (!email || !addr) {
-      console.error("❌ Missing email or address — aborting.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("clients")
-      .update({ address: addr })
-      .eq("email", email);
-
-    if (error) {
-      console.error("❌ Address update failed:", error.message);
-    } else {
-      console.log("✅ Address saved.");
-    }
-  };
-
-  // Countdown timer
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
+    if (ranRef.current) return;
+    ranRef.current = true;
+
+    const fail = (msg) => {
+      setStatus("Failed");
+      setMessage(msg);
+    };
+
+    (async () => {
+      let form = null;
+      try {
+        form = JSON.parse(sessionStorage.getItem("bct_pending"));
+      } catch {}
+
+      if (!form) {
+        return fail("Signup details not found. Please sign up again in the same browser tab.");
+      }
+
+      setMessage("Payment received. Creating your account...");
+
+      const { data, error } = await supabase.functions.invoke("confirm-payment", {
+        body: { sessionId, form },
       });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
-  // Update step label
-  useEffect(() => {
-    const elapsed = 30 - timeLeft;
-    const current = [...STEPS].reverse().find((s) => elapsed >= s.at);
-    if (current) setStepLabel(current.label);
-  }, [timeLeft]);
+      if (error || !data?.paid) {
+        let detail = data?.error || error?.message || "Payment could not be confirmed.";
+        try { detail = await error.context.text(); } catch {}
+        console.error("Confirm error:", detail);
+        return fail(detail);
+      }
 
-  // When countdown hits 0 — send email + save address
-  useEffect(() => {
-    if (timeLeft !== 0) return;
-    if (emailSentRef.current) return;
-    emailSentRef.current = true;
-    setStatus("Processed");
+      const formCopy = { ...form };
+      sessionStorage.removeItem("bct_pending");
 
-    Promise.all([sendEmail(), saveAddress()]).then(() => {
-      setTimeout(() => {
-        if (onComplete) onComplete();
-      }, 2000);
-    });
-  }, [timeLeft]);
+      const name =
+        data.name ||
+        `${formCopy.firstName || ""} ${formCopy.lastName || ""}`.trim() ||
+        "there";
+      const email = (data.email || formCopy.email || "").trim();
+
+      setInfo({ name, email });
+      setMessage("Account created. Sending confirmation email...");
+      setEmailStatus("Sending...");
+
+      const today = new Date();
+      const next = new Date(today);
+      next.setDate(today.getDate() + 30);
+      const fmt = (d) =>
+        d.toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" });
+
+      if (!email) {
+        console.error("No recipient email available.", data, Object.keys(formCopy));
+        setEmailStatus("Not sent (no email address)");
+      } else {
+        const result = await sendWelcomeEmail({
+          to_name: name,
+          to_email: email,
+          payment_date: fmt(today),
+          next_billing_date: fmt(next),
+        });
+        setEmailStatus(result.ok ? "Sent ✓" : `Failed (${result.error})`);
+      }
+
+      setStatus("Processed");
+      setMessage("Verification complete.");
+
+      // Keep the repo path (e.g. /my-repo/) and only drop ?session_id=...
+      window.history.replaceState({}, "", window.location.pathname);
+
+      setTimeout(() => onComplete && onComplete(), 4000);
+    })();
+  }, [sessionId]);
 
   return (
     <div className="bank-container">
@@ -134,25 +127,25 @@ export default function Verification({ name, email, user, address, onComplete })
           {status === "Processing" ? (
             <div className="spinner"></div>
           ) : (
-            <div className="success-icon">✓</div>
+            <div className="success-icon">{status === "Failed" ? "✕" : "✓"}</div>
           )}
         </div>
         <div className="transaction-info">
           <h2>{status}</h2>
-          {status === "Processing" ? (
-            <p className="timer-alert">{stepLabel} &nbsp;({timeLeft}s)</p>
-          ) : (
-            <p className="success-msg">Verification complete. Sending confirmation email...</p>
-          )}
+          <p className={status === "Processing" ? "timer-alert" : "success-msg"}>{message}</p>
         </div>
         <div className="details-grid">
           <div className="detail-item">
             <span className="detail-label">Name</span>
-            <span className="detail-value">{name || "NOT RECEIVED"}</span>
+            <span className="detail-value">{info.name || "—"}</span>
           </div>
           <div className="detail-item">
             <span className="detail-label">Email</span>
-            <span className="detail-value">{email || "NOT RECEIVED"}</span>
+            <span className="detail-value">{info.email || "—"}</span>
+          </div>
+          <div className="detail-item">
+            <span className="detail-label">Confirmation email</span>
+            <span className="detail-value">{emailStatus}</span>
           </div>
         </div>
       </div>

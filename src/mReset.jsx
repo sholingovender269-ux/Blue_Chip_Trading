@@ -8,6 +8,19 @@ import { supabase } from "./supabaseClient";
 // set, Mdashboard.jsx shows only this page. Saving a new password clears the flag.
 // The database function mentor_change_password checks the current password and hashes the new one.
 
+const getPasswordStrength = (pwd) => {
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    if (pwd.length >= 12) score++;
+    return score;
+};
+
+const strengthLabels = ["", "Weak", "Fair", "Good", "Strong", "Very Strong"];
+const strengthClasses = ["", "pw-weak", "pw-fair", "pw-good", "pw-strong", "pw-vstrong"];
+
 export default function MentorReset({ user, forced, onDone }) {
     const [current, setCurrent] = useState("");
     const [next, setNext] = useState("");
@@ -15,6 +28,14 @@ export default function MentorReset({ user, forced, onDone }) {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [busy, setBusy] = useState(false);
+
+    const strengthScore = getPasswordStrength(next);
+    const requirements = [
+        { label: "8+ chars",  met: next.length >= 8 },
+        { label: "Uppercase", met: /[A-Z]/.test(next) },
+        { label: "Number",    met: /[0-9]/.test(next) },
+        { label: "Symbol",    met: /[^A-Za-z0-9]/.test(next) },
+    ];
 
     const submit = async (e) => {
         e.preventDefault();
@@ -84,6 +105,32 @@ export default function MentorReset({ user, forced, onDone }) {
                         required
                         autoComplete="new-password"
                     />
+
+                    {next.length > 0 && (
+                        <div className="pw-meter">
+                            <div className="pw-bars">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                    <div
+                                        key={i}
+                                        className={`pw-bar ${i <= strengthScore ? strengthClasses[strengthScore] : ""}`}
+                                    />
+                                ))}
+                            </div>
+                            <span className={`pw-label ${strengthClasses[strengthScore]}`}>
+                                {strengthLabels[strengthScore]}
+                            </span>
+                        </div>
+                    )}
+
+                    <ul className="pw-requirements">
+                        {requirements.map((req) => (
+                            <li key={req.label} className={req.met ? "pw-met" : "pw-unmet"}>
+                                <span className="pw-pill">{req.met ? "✓" : "×"}</span>
+                                {req.label}
+                            </li>
+                        ))}
+                    </ul>
+
                     <input
                         type="password"
                         className="reset-input"

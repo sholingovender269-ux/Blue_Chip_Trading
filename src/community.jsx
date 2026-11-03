@@ -2,22 +2,17 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import "./community.css";
 import { supabase } from "./supabaseClient";
 
-// Basic profanity filter — extend this list as needed.
-const BAD_WORDS = [
-  "fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick",
-  "piss", "slut", "whore", "nigger", "faggot", "cock", "pussy",
-];
-
 const DELETE_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const BAN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
 
-function censor(text) {
-  if (!text) return text;
-  let out = text;
-  BAD_WORDS.forEach((word) => {
-    const re = new RegExp(`\\b${word}\\b`, "gi");
-    out = out.replace(re, (match) => match[0] + "*".repeat(match.length - 1));
-  });
-  return out;
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Returns true if the text contains any word from the banned list.
+function containsBannedWord(text, words) {
+  if (!text || !words.length) return false;
+  return words.some((w) => new RegExp(`\\b${escapeRegex(w)}\\b`, "i").test(text));
 }
 
 function formatTime(iso) {
@@ -32,6 +27,13 @@ function formatTime(iso) {
   if (sameDay) return time;
   const date = d.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" });
   return `${date} · ${time}`;
+}
+
+function formatCountdown(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = String(total % 60).padStart(2, "0");
+  return `${m}:${s}`;
 }
 
 function canStillDelete(createdAt, now) {
@@ -52,7 +54,7 @@ function GuidelinesModal({ onAgree }) {
             <li>Trading involves risk. Any decisions you make based on what others share are your own responsibility.</li>
             <li>Be respectful. No harassment, hate speech, or personal attacks.</li>
             <li>No spam, scams, or promotion of unrelated services.</li>
-            <li>Messages are filtered for offensive language, but you're still responsible for what you post.</li>
+            <li>Using vulgar or offensive language will get your message blocked and you will be banned from the chat for 10 minutes.</li>
             <li>You can remove your own message within 5 minutes of sending it — after that it stays permanently.</li>
             <li>Anything shared here is visible to other members of the community.</li>
           </ul>
@@ -65,7 +67,7 @@ function GuidelinesModal({ onAgree }) {
   );
 }
 
-export default function CommunityPage({ user, onApplyMentor }) {
+export default function CommunityPage({ user }) {
   const [agreed, setAgreed] = useState(false);
 
   const [messages, setMessages] = useState([]);
@@ -77,8 +79,17 @@ export default function CommunityPage({ user, onApplyMentor }) {
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [nowTick, setNowTick] = useState(Date.now());
+
+  // Moderation
+  const [bannedWords, setBannedWords] = useState([]);
+  const [bannedUntil, setBannedUntil] = useState(null); // ms timestamp or null
+  const [banNow, setBanNow] = useState(Date.now());
+
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
+
+  const userId = user?.id ? String(user.id) : null;
+  const isBanned = bannedUntil !== null && bannedUntil > banNow;
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -88,11 +99,76 @@ export default function CommunityPage({ user, onApplyMentor }) {
     });
   }, []);
 
+  // Tick for the 5-minute delete window
   useEffect(() => {
     const id = setInterval(() => setNowTick(Date.now()), 30000);
     return () => clearInterval(id);
   }, []);
 
+  // Tick every second while banned (countdown + auto-unban)
+  useEffect(() => {
+    if (bannedUntil === null) return undefined;
+    setBanNow(Date.now());
+    const id = setInterval(() => {
+      const now = Date.now();
+      setBanNow(now);
+      if (now >= bannedUntil) {
+        setBannedUntil(null);
+        setError(null);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [bannedUntil]);
+
+  // Load banned words (same table the live chat uses)
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from("chat_banned_words")
+      .select("word")
+      .then(({ data, error: err }) => {
+        if (err) return console.error("Banned words load failed:", err);
+        if (active) {
+          setBannedWords(
+            (data || []).map((r) => String(r.word || "").trim().toLowerCase()).filter(Boolean)
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Check whether this user is currently banned
+  const fetchBan = useCallback(async () => {
+    if (!userId) return null;
+    const { data, error: err } = await supabase
+      .from("community_bans")
+      .select("banned_until")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (err) {
+      console.error("Ban check failed:", err);
+      return null;
+    }
+    const until = data?.banned_until ? new Date(data.banned_until).getTime() : null;
+    return until && until > Date.now() ? until : null;
+  }, [userId]);
+
+  useEffect(() => {
+    let active = true;
+    fetchBan().then((until) => {
+      if (active) {
+        setBannedUntil(until);
+        setBanNow(Date.now());
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchBan]);
+
+  // Messages + realtime
   useEffect(() => {
     let cancelled = false;
 
@@ -165,6 +241,23 @@ export default function CommunityPage({ user, onApplyMentor }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const banUser = async () => {
+    const until = Date.now() + BAN_DURATION_MS;
+    setBannedUntil(until);
+    setBanNow(Date.now());
+    setText("");
+    clearImage();
+    const { error: banErr } = await supabase.from("community_bans").upsert(
+      {
+        user_id: userId,
+        banned_until: new Date(until).toISOString(),
+        reason: "vulgar language",
+      },
+      { onConflict: "user_id" }
+    );
+    if (banErr) console.error("Ban save failed:", banErr);
+  };
+
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed && !imageFile) return;
@@ -174,21 +267,35 @@ export default function CommunityPage({ user, onApplyMentor }) {
       return;
     }
 
+    if (isBanned) return;
+
     setSending(true);
     setError(null);
 
     try {
-      const authUserId = user?.id ? String(user.id) : null;
-
-      if (!authUserId) {
+      if (!userId) {
         throw new Error("You must be logged in to post. Log out and back in.");
+      }
+
+      // Re-check the ban server-side in case it was set from another tab/device
+      const activeBan = await fetchBan();
+      if (activeBan) {
+        setBannedUntil(activeBan);
+        setBanNow(Date.now());
+        return;
+      }
+
+      // Vulgar word check: message is NOT sent, user is banned for 10 minutes
+      if (trimmed && containsBannedWord(trimmed, bannedWords)) {
+        await banUser();
+        return;
       }
 
       let imageUrl = null;
 
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
-        const path = `${authUserId}/${Date.now()}.${ext}`;
+        const path = `${userId}/${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage
           .from("community-images")
           .upload(path, imageFile);
@@ -201,14 +308,12 @@ export default function CommunityPage({ user, onApplyMentor }) {
         imageUrl = publicData.publicUrl;
       }
 
-      const cleanContent = trimmed ? censor(trimmed) : null;
-
       const { error: insertErr } = await supabase
         .from("community_messages")
         .insert({
-          user_id: authUserId,
+          user_id: userId,
           user_name: user?.name || "Trader",
-          content: cleanContent,
+          content: trimmed || null,
           image_url: imageUrl,
         });
 
@@ -257,6 +362,8 @@ export default function CommunityPage({ user, onApplyMentor }) {
     }
   };
 
+  const composerDisabled = !agreed || isBanned;
+
   return (
     <div className="community-page">
       {!agreed && <GuidelinesModal onAgree={() => setAgreed(true)} />}
@@ -264,26 +371,6 @@ export default function CommunityPage({ user, onApplyMentor }) {
       <div className="community-header">
         <h1>Community</h1>
         <span className="live-badge">● LIVE</span>
-        {onApplyMentor && (
-          <button
-            type="button"
-            className="community-apply-mentor-btn"
-            onClick={onApplyMentor}
-            title="Apply to become a mentor"
-            style={{
-              marginLeft: "auto",
-              padding: "8px 16px",
-              borderRadius: "8px",
-              border: "none",
-              background: "#1f6feb",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Become a Mentor — Apply Now
-          </button>
-        )}
       </div>
 
       <div className="community-feed" ref={scrollRef}>
@@ -333,51 +420,58 @@ export default function CommunityPage({ user, onApplyMentor }) {
 
       {error && <div className="community-error">{error}</div>}
 
-      {imagePreview && (
+      {imagePreview && !isBanned && (
         <div className="community-image-preview">
           <img src={imagePreview} alt="Preview" />
           <button onClick={clearImage} className="community-remove-image">✕</button>
         </div>
       )}
 
-      <div className="community-composer">
-        <button
-          className="community-attach-btn"
-          onClick={() => fileInputRef.current?.click()}
-          title="Attach image"
-          disabled={!agreed}
-        >
-          📎
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
-          disabled={!agreed}
-        />
-        <textarea
-          className="community-input"
-          placeholder={
-            agreed
-              ? "Message the community…"
-              : "Accept the guidelines above to start chatting…"
-          }
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={1}
-          disabled={!agreed}
-        />
-        <button
-          className="community-send-btn"
-          onClick={handleSend}
-          disabled={!agreed || sending || (!text.trim() && !imageFile)}
-        >
-          {sending ? "…" : "Send"}
-        </button>
-      </div>
+      {isBanned ? (
+        <div className="community-error community-banned">
+          Vulgar language was detected, so you've been blocked from the community chat.
+          You can chat again in {formatCountdown(bannedUntil - banNow)}.
+        </div>
+      ) : (
+        <div className="community-composer">
+          <button
+            className="community-attach-btn"
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach image"
+            disabled={composerDisabled}
+          >
+            📎
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            style={{ display: "none" }}
+            disabled={composerDisabled}
+          />
+          <textarea
+            className="community-input"
+            placeholder={
+              agreed
+                ? "Message the community…"
+                : "Accept the guidelines above to start chatting…"
+            }
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={1}
+            disabled={composerDisabled}
+          />
+          <button
+            className="community-send-btn"
+            onClick={handleSend}
+            disabled={composerDisabled || sending || (!text.trim() && !imageFile)}
+          >
+            {sending ? "…" : "Send"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

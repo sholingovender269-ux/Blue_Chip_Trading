@@ -10,6 +10,7 @@
   --violet-border: rgba(155, 123, 255, 0.28);
   --danger:      #ff7a7a;
   --danger-dim:  rgba(255, 99, 99, 0.08);
+  --danger-border: rgba(255, 99, 99, 0.35);
 
   --panel:       #0d1210;
   --panel-2:     #121815;
@@ -52,6 +53,69 @@
   margin: 0;
   color: var(--mid);
   font-size: 14.5px;
+}
+
+/* ── Deletion countdown banner ── */
+
+.account-deletion-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px 22px;
+  background: linear-gradient(165deg, rgba(255, 99, 99, 0.12) 0%, rgba(255, 99, 99, 0.05) 100%);
+  border: 1px solid var(--danger-border);
+  border-radius: 16px;
+  padding: 20px 24px 24px;
+  margin-bottom: 26px;
+  overflow: hidden;
+}
+
+.account-deletion-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--danger);
+  letter-spacing: -0.01em;
+}
+
+.account-deletion-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--mid);
+  line-height: 1.5;
+}
+
+.account-deletion-error {
+  margin-top: 10px;
+}
+
+.account-deletion-timer {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--heading);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.account-deletion-cancel {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.account-deletion-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.account-deletion-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5e5e, #ff9a7a);
+  transition: width 1s linear;
 }
 
 /* ── Tabs — pill switcher instead of underline ── */
@@ -102,6 +166,10 @@
   overflow: hidden;
 }
 
+.account-card + .account-card {
+  margin-top: 22px;
+}
+
 .account-card::before {
   content: "";
   position: absolute;
@@ -136,6 +204,28 @@
   border: 1px solid var(--border);
   padding: 5px 12px;
   border-radius: 999px;
+}
+
+/* ── Danger card (delete account) ── */
+
+.account-card-danger {
+  border-color: var(--danger-border);
+}
+
+.account-card-danger::before {
+  background: linear-gradient(90deg, #ff5e5e, #ff9a7a);
+}
+
+.account-card-danger .account-card-header h2 {
+  color: var(--danger);
+}
+
+.account-danger-text {
+  margin: 0 0 20px;
+  color: var(--mid);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 460px;
 }
 
 /* ── Avatar row ── */
@@ -258,6 +348,11 @@
   cursor: not-allowed;
 }
 
+.account-btn:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 2px;
+}
+
 .account-btn-primary {
   background: linear-gradient(120deg, var(--mint), var(--sky));
   color: #06120d;
@@ -286,6 +381,31 @@
   color: var(--mint);
 }
 
+/* Outlined danger button (opens the modal) */
+.account-btn-danger {
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.account-btn-danger:hover:not(:disabled) {
+  background: rgba(255, 99, 99, 0.16);
+  border-color: rgba(255, 99, 99, 0.6);
+}
+
+/* Solid danger button (start countdown) */
+.account-btn-danger-solid {
+  background: #ff5e5e;
+  color: #1a0505;
+  box-shadow: 0 4px 16px rgba(255, 94, 94, 0.25);
+}
+
+.account-btn-danger-solid:hover:not(:disabled) {
+  background: #ff7a7a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(255, 94, 94, 0.35);
+}
+
 .account-message {
   font-size: 13px;
   padding: 10px 14px;
@@ -304,6 +424,60 @@
   background: var(--danger-dim);
   border-color: rgba(255, 99, 99, 0.25);
   color: var(--danger);
+}
+
+/* ── Delete account modal ── */
+
+.account-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 5, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.account-modal {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(165deg, var(--panel-2) 0%, var(--panel) 100%);
+  border: 1px solid var(--danger-border);
+  border-radius: 18px;
+  padding: 28px 28px 26px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+
+.account-modal h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--heading);
+  letter-spacing: -0.01em;
+}
+
+.account-modal p {
+  margin: 0 0 20px;
+  color: var(--mid);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.account-modal-form {
+  max-width: none;
+}
+
+.account-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.account-modal-actions .account-btn {
+  align-self: auto;
 }
 
 /* ── Trade history table ── */
@@ -390,5 +564,40 @@
 
   .account-field-row {
     grid-template-columns: 1fr;
+  }
+
+  .account-deletion-banner {
+    grid-template-columns: 1fr;
+    padding: 18px 18px 22px;
+  }
+
+  .account-deletion-timer {
+    font-size: 30px;
+  }
+
+  .account-deletion-cancel {
+    width: 100%;
+  }
+
+  .account-modal {
+    padding: 22px 18px 20px;
+  }
+
+  .account-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .account-modal-actions .account-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-btn,
+  .account-tab,
+  .account-field input,
+  .account-field textarea,
+  .account-deletion-progress-bar {
+    transition: none;
   }
 }

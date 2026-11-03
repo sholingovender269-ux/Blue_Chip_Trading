@@ -1,5 +1,13 @@
 import { supabase } from "./supabaseClient";
 
+// ── Account rules ──────────────────────────────────────────────
+// Leverage 1:500 means you only need 1/500th (0.2%) of a position's
+// value as margin. Margin level = equity / used margin * 100.
+export const LEVERAGE = 500;
+export const MIN_LOT = 0.01;
+export const MARGIN_CALL_LEVEL = 100; // warning below this margin level (%)
+export const STOP_OUT_LEVEL = 50;     // positions auto-close below this margin level (%)
+
 // Roughly standard contract sizes per instrument type — adjust these to
 // match whatever your platform actually models. Kept simple on purpose:
 // P&L = price difference * lot_size * contract_size * direction.
@@ -34,6 +42,31 @@ export function calculatePnl({ symbol, side, lotSize, entryPrice, currentPrice }
   const direction = side === "buy" ? 1 : -1;
   const contractSize = getContractSize(symbol);
   return (currentPrice - entryPrice) * direction * lotSize * contractSize;
+}
+
+// Margin (in account currency, USD) needed to hold a position:
+//   position value / leverage
+// For pairs where USD is the base currency (USDJPY, USDCHF) the position
+// value is simply lots * contract size. For everything else (EURUSD,
+// GBPUSD, AUDUSD, XAUUSD ...) it is lots * contract size * price.
+export function calculateRequiredMargin({ symbol, lotSize, price }) {
+  const lots = Number(lotSize) || 0;
+  const p = Number(price) || 0;
+  if (lots <= 0 || p <= 0) return 0;
+
+  const contractSize = getContractSize(symbol);
+  const positionValue = symbol?.startsWith("USD")
+    ? lots * contractSize
+    : lots * contractSize * p;
+
+  return positionValue / LEVERAGE;
+}
+
+// Largest lot size (rounded down to 0.01) that fits in the free margin.
+export function calculateMaxLots({ symbol, price, freeMargin }) {
+  const marginPerLot = calculateRequiredMargin({ symbol, lotSize: 1, price });
+  if (marginPerLot <= 0 || freeMargin <= 0) return 0;
+  return Math.floor((freeMargin / marginPerLot) * 100) / 100;
 }
 
 // Validates TP/SL against entry price and side. Returns { valid, error }.

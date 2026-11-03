@@ -1,41 +1,79 @@
-import { LiveKitRoom, useTracks, VideoTrack } from '@livekit/components-react';
+import {
+  LiveKitRoom,
+  useRemoteParticipants,
+  useTracks,
+  VideoTrack,
+  RoomAudioRenderer,
+  StartAudio,
+} from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { useEffect, useState, useRef } from 'react';
 import '@livekit/components-styles';
 import './live.css';
+import LiveChat from './LiveChat.jsx';
+import UpcomingLives from './upcomingLives.jsx'; // NEW
 
-// Same URL as GoLive.jsx
 const LIVEKIT_URL = 'wss://blue-chip-trading-oz31f1yy.livekit.cloud';
 
-function LiveVideo() {
-  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone]);
-  const videoTrack = tracks.find((t) => t.source === Track.Source.Camera);
+function LiveStage() {
+  const tracks = useTracks([Track.Source.Camera, Track.Source.Microphone, Track.Source.ScreenShare]);
+  const videoTrack = tracks.find(
+    (t) => !t.participant.isLocal && t.source === Track.Source.Camera && t.publication
+  );
+  const screenTrack = tracks.find(
+    (t) => !t.participant.isLocal && t.source === Track.Source.ScreenShare && t.publication
+  );
 
-  if (tracks.length === 0) {
+  const remotes = useRemoteParticipants();
+  const broadcaster = remotes.find((p) => !String(p.identity).startsWith('viewer-'));
+  const isLive = Boolean(broadcaster);
+  const chatRoom = `main-room-${broadcaster?.sid || 'live'}`;
+
+  // OFFLINE: offline card on the left, upcoming lives on the right
+  if (!isLive) {
     return (
-      <div className="live-card">
-        <div className="live-card-header">
-          <span className="live-pill off">● OFFLINE</span>
+      <div className="live-split">
+        <div className="live-card">
+          <div className="live-card-header">
+            <span className="live-pill off">● OFFLINE</span>
+          </div>
+          <div className="live-video-frame">
+            <div className="live-placeholder">Stream is currently offline</div>
+          </div>
         </div>
-        <div className="live-video-frame">
-          <div className="live-placeholder">Stream is currently offline</div>
-        </div>
+
+        <UpcomingLives />
       </div>
     );
   }
 
+  // LIVE: schedule is hidden
   return (
-    <div className="live-card">
-      <div className="live-card-header">
-        <span className="live-pill on">● LIVE NOW</span>
+    <div className="live-layout">
+      <div className="live-card">
+        <div className="live-card-header">
+          <span className="live-pill on">● LIVE NOW</span>
+          {screenTrack && <span className="live-viewer-name">🖥️ Screen share</span>}
+        </div>
+        <div className="live-video-frame">
+          {screenTrack ? (
+            <>
+              <VideoTrack trackRef={screenTrack} className="live-video contain" />
+              {videoTrack && (
+                <div className="live-pip">
+                  <VideoTrack trackRef={videoTrack} className="live-video" />
+                </div>
+              )}
+            </>
+          ) : videoTrack ? (
+            <VideoTrack trackRef={videoTrack} className="live-video" />
+          ) : (
+            <div className="live-placeholder">Camera is off</div>
+          )}
+        </div>
       </div>
-      <div className="live-video-frame">
-        {videoTrack ? (
-          <VideoTrack trackRef={videoTrack} className="live-video" />
-        ) : (
-          <div className="live-placeholder">Audio only</div>
-        )}
-      </div>
+
+      <LiveChat key={chatRoom} room={chatRoom} />
     </div>
   );
 }
@@ -43,7 +81,6 @@ function LiveVideo() {
 export default function WatchLive() {
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
-  // unique identity per viewer session so multiple viewers don't collide
   const viewerId = useRef(`viewer-${Math.random().toString(36).slice(2, 10)}`);
 
   useEffect(() => {
@@ -61,8 +98,11 @@ export default function WatchLive() {
   if (error) {
     return (
       <div className="live-page">
-        <div className="live-card">
-          <div className="live-error">{error}</div>
+        <div className="live-split">
+          <div className="live-card">
+            <div className="live-error">{error}</div>
+          </div>
+          <UpcomingLives />
         </div>
       </div>
     );
@@ -87,7 +127,19 @@ export default function WatchLive() {
         audio={false}
         connect={true}
       >
-        <LiveVideo />
+        <LiveStage />
+        <RoomAudioRenderer />
+        <StartAudio
+          label="🔊 Click to enable sound"
+          className="live-btn start"
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10,
+          }}
+        />
       </LiveKitRoom>
     </div>
   );

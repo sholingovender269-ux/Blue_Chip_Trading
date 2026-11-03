@@ -23,7 +23,7 @@ const VISION_MODELS = [
 
 // Text-only fallback chain (no image attached)
 const TEXT_MODELS = [
-  "openai/gpt-3.5-turbo",
+  "nvidia/nemotron-3-ultra-550b-a55b:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "z-ai/glm-5.2:free",
 ];

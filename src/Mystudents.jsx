@@ -48,6 +48,18 @@ function MyStudents({ onNavigate }) {
 
 
     // =========================
+    // MASK ID NUMBER (hide last 5 digits)
+    // =========================
+
+    const maskId = (id) => {
+        if (!id) return "—";
+        const str = String(id);
+        if (str.length <= 5) return "•".repeat(str.length);
+        return str.slice(0, -5) + "•••••";
+    };
+
+
+    // =========================
     // SEARCH STUDENTS
     // =========================
 
@@ -271,7 +283,7 @@ function MyStudents({ onNavigate }) {
 
 
                                             <td>
-                                                {student.id_number || "—"}
+                                                {maskId(student.id_number)}
                                             </td>
 
 

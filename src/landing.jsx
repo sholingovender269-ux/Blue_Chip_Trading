@@ -11,6 +11,7 @@ import TradingPanel from "./TradingPanel.jsx";
 import Account from "./Account.jsx";
 import Courses from "./Courses.jsx";
 import MentorApplication from "./mentorApplication.jsx"; // adjust filename/path if different
+import OnboardingTour from "./tour.jsx";
 import {
   getOrCreateDemoAccount,
   fetchOpenPositions,
@@ -253,44 +254,48 @@ function ThemeToggle({ theme, toggleTheme }) {
 
 function DashboardNav({ user, onLogout, activeNavItem, setActiveNavItem, theme, toggleTheme }) {
   return (
-    <nav className="dashboard-nav">
-      <div className="nav-logo">
-        Blue <span>Chip</span> Trading
-      </div>
-
-      <div className="nav-menu">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.value}
-            className={`nav-menu-item ${activeNavItem === item.value ? "active" : ""}`}
-            onClick={() => setActiveNavItem(item.value)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="nav-right">
-        <div className="nav-user">
-          <div className="user-avatar-wrap">
-            {user?.profile_picture_url ? (
-              <img
-                src={user.profile_picture_url}
-                alt=""
-                className="user-avatar-img"
-              />
-            ) : (
-              <div className="user-avatar">{user?.name?.charAt(0) || "U"}</div>
-            )}
-          </div>
-          <span className="user-name">{user?.name || "Trader"}</span>
+    <>
+      <nav className="dashboard-nav">
+        <div className="nav-logo">
+          Blue <span>Chip</span> Trading
         </div>
-        <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
-        <button className="logout-btn" onClick={onLogout}>
-          Log Out
-        </button>
-      </div>
-    </nav>
+
+        <div className="nav-menu">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.value}
+              data-tour={item.value}
+              className={`nav-menu-item ${activeNavItem === item.value ? "active" : ""}`}
+              onClick={() => setActiveNavItem(item.value)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="nav-right">
+          <div className="nav-user">
+            <div className="user-avatar-wrap">
+              {user?.profile_picture_url ? (
+                <img
+                  src={user.profile_picture_url}
+                  alt=""
+                  className="user-avatar-img"
+                />
+              ) : (
+                <div className="user-avatar">{user?.name?.charAt(0) || "U"}</div>
+              )}
+            </div>
+            <span className="user-name">{user?.name || "Trader"}</span>
+          </div>
+          <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+          <button className="logout-btn" onClick={onLogout}>
+            Log Out
+          </button>
+        </div>
+      </nav>
+      <OnboardingTour />
+    </>
   );
 }
 

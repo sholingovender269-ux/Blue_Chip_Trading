@@ -14,7 +14,7 @@ import MentorReset from "./mReset.jsx";
 
 const NAV = [
     { key: "dashboard", label: "Dashboard" },
-    { key: "students", label: "My Students" },
+    { key: "students", label: "Students" },
     { key: "signals", label: "Signals" },
     { key: "courses", label: "Courses" },
     { key: "community", label: "Community" },
@@ -40,6 +40,8 @@ export default function MentorPortal({ user, onLogout }) {
     const [currentUser, setCurrentUser] = useState(user);
     const forced = needsReset(currentUser);
     const [pageState, setPage] = useState("dashboard");
+    // Remembers a photo URL that failed to load, so the initials show instead.
+    const [brokenUrl, setBrokenUrl] = useState("");
     // While the first-login reset is pending, the reset page is the only page.
     const page = forced ? "mentorReset" : pageState;
 
@@ -62,6 +64,12 @@ export default function MentorPortal({ user, onLogout }) {
 
     const firstName =
         currentUser?.first_name || currentUser?.firstName || currentUser?.name?.split(" ")[0] || "";
+    const lastName =
+        currentUser?.last_name || currentUser?.lastName || currentUser?.name?.split(" ").slice(1).join(" ") || "";
+    const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase() || "M";
+
+    const avatarUrl = currentUser?.profile_picture_url || "";
+    const showPhoto = !!avatarUrl && brokenUrl !== avatarUrl;
 
     return (
         <>
@@ -87,6 +95,24 @@ export default function MentorPortal({ user, onLogout }) {
 
                     <a href="#" onClick={go("golive")} className={`go-live-nav ${forced ? "nav-locked" : ""}`}>
                         Go Live
+                    </a>
+
+                    {/* PROFILE PHOTO (small round icon, opens My Profile) */}
+                    <a
+                        href="#"
+                        onClick={go("profile")}
+                        title="My Profile"
+                        className={`nav-avatar ${page === "profile" ? "active" : ""} ${forced ? "nav-locked" : ""}`}
+                    >
+                        {showPhoto ? (
+                            <img
+                                src={avatarUrl}
+                                alt="Profile"
+                                onError={() => setBrokenUrl(avatarUrl)}
+                            />
+                        ) : (
+                            <span>{initials}</span>
+                        )}
                     </a>
 
                     <a
@@ -145,7 +171,7 @@ export default function MentorPortal({ user, onLogout }) {
             {page === "students" && <MyStudents onNavigate={setPage} />}
             {page === "signals" && <MentorSignals onNavigate={setPage} user={currentUser} />}
             {page === "courses" && <MentorCourses onNavigate={setPage} user={currentUser} />}
-            {page === "golive" && <GoLive />}
+            {page === "golive" && <GoLive mentor={currentUser} />}
             {page === "profile" && <MentorProfile user={currentUser} onUserUpdate={setCurrentUser} />}
             {page === "mentorReset" && (
                 <MentorReset user={currentUser} forced={forced} onDone={handlePasswordChanged} />

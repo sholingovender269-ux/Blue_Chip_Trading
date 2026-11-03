@@ -78,6 +78,7 @@
 }
 
 .live-video-frame {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   background: var(--bg-dark);
@@ -93,6 +94,27 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Shared screens must never be cropped */
+.live-video.contain {
+  object-fit: contain;
+  background: #000;
+}
+
+/* Camera in the corner while the screen is shared */
+.live-pip {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 24%;
+  min-width: 110px;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--bg-dark);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
 }
 
 .live-placeholder {
@@ -127,6 +149,13 @@
   color: var(--text-bright);
   background: rgba(255, 255, 255, 0.05);
   border-color: var(--border-hover);
+}
+
+/* Screen share is on */
+.live-btn.sharing {
+  color: var(--up);
+  background: var(--up-dim);
+  border-color: rgba(0, 229, 160, 0.3);
 }
 
 .live-btn.start {
@@ -168,8 +197,152 @@
   margin-bottom: 20px;
 }
 
+.live-error-inline {
+  margin: 14px 0 0;
+}
+
 @media (max-width: 700px) {
   .live-page { padding: 28px 20px; }
   .live-controls { flex-direction: column; }
   .live-btn.end { margin-left: 0; }
+  .live-pip { width: 32%; min-width: 90px; }
+}
+/* ---------- Side-by-side layout (offline) ---------- */
+.live-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+  align-items: start;
+}
+
+.live-split .live-card {
+  max-width: 100%;
+}
+
+/* ---------- Schedule live ---------- */
+.schedule-heading {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin: 0;
+}
+
+.schedule-subheading {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-mid);
+  margin: 24px 0 10px;
+  letter-spacing: 0.4px;
+}
+
+.schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.schedule-field-wide {
+  grid-column: 1 / -1;
+}
+
+.schedule-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.schedule-field > span {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-mid);
+  letter-spacing: 0.4px;
+}
+
+.schedule-input {
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-bright);
+  padding: 11px 14px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  color-scheme: dark;
+}
+
+.schedule-input:focus {
+  outline: none;
+  border-color: var(--border-hover);
+}
+
+.schedule-err {
+  color: var(--down);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.schedule-success {
+  background: var(--up-dim);
+  border: 1px solid rgba(0, 229, 160, 0.3);
+  color: var(--up);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.schedule-item:first-of-type {
+  border-top: none;
+}
+
+.schedule-item-title {
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.schedule-item-meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-mid);
+}
+
+.schedule-item-desc {
+  color: var(--text-mid);
+  font-size: 0.85rem;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.schedule-item .live-btn.end {
+  margin-left: 0;
+  padding: 8px 14px;
+}
+
+@media (max-width: 900px) {
+  .live-split { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .schedule-row { grid-template-columns: 1fr; }
+  .schedule-item { flex-direction: column; align-items: flex-start; }
 }

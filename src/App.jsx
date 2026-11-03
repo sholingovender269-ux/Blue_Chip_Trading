@@ -1,13 +1,35 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
 import Homepage from "./homepage.jsx";
 import LoginPage from "./login.jsx";
 import Signup from "./Signup.jsx";
 import Payment from "./Payment.jsx";
+import Verification from "./Verification.jsx";
 import Landing from "./landing.jsx";
 import ForgotPasswordPage from "./fPassword.jsx";
+import ResetPasswordPage from "./resetPassword.jsx";
 import Admin from "./admin.jsx";
+import AdminLogin from "./adminLogin.jsx";
 import MentorApplication from "./mentorApplication.jsx";
 import { supabase } from "./supabaseClient";
+
+// True when the user arrived from a reset email (mentor token link or Supabase client recovery link)
+const isResetLink =
+  new URLSearchParams(window.location.search).has("mentor_reset") ||
+  (window.location.hash || "").includes("type=recovery");
+
+// True when the URL is yoursite.com/#admin
+const isAdminHash = () => (window.location.hash || "") === "#admin";
+
+// Removes "#admin" from the address bar without reloading or firing hashchange.
+const clearAdminHash = () => {
+  try {
+    if (isAdminHash()) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+  } catch {
+    // ignore
+  }
+};
 
 // Lazy-loaded so the mentor portal's CSS (global, generic class names like
 // .main / .section / .error-message) is only loaded for mentors and can't
@@ -41,9 +63,19 @@ class PortalErrorBoundary extends React.Component {
 }
 
 function App() {
-  const [page, setPage] = useState("home");
+  const [page, setPage] = useState(
+    isResetLink ? "reset-password" : isAdminHash() ? "admin-login" : "home"
+  );
+  const [forgotRole, setForgotRole] = useState("client");
   const [user, setUser] = useState(null);
   const [checkedStorage, setCheckedStorage] = useState(false);
+  const [paymentSessionId, setPaymentSessionId] = useState(() =>
+    new URLSearchParams(window.location.search).get("session_id")
+  );
+
+  // Lets the hashchange listener see the latest user without re-subscribing.
+  const userRef = useRef(null);
+  userRef.current = user;
 
   const pageForRole = (role) =>
     role === "admin" ? "admin" : role === "mentor" ? "mentor-portal" : "dashboard";
@@ -54,6 +86,7 @@ function App() {
   useEffect(() => {
     const restore = async () => {
       try {
+        if (isResetLink) return; // don't auto-login over a reset link
         const stored = localStorage.getItem("bct_user");
         if (stored) {
           const parsed = JSON.parse(stored);
@@ -74,7 +107,14 @@ function App() {
 
           if (valid) {
             setUser(parsed);
-            setPage(pageForRole(parsed.role));
+            // Someone who isn't an admin opening /#admin should see the
+            // admin sign-in, not get bounced to their own dashboard.
+            if (isAdminHash() && parsed.role !== "admin") {
+              setPage("admin-login");
+            } else {
+              clearAdminHash();
+              setPage(pageForRole(parsed.role));
+            }
           } else {
             localStorage.removeItem("bct_user");
           }
@@ -89,21 +129,32 @@ function App() {
     restore();
   }, []);
 
+  // Typing #admin onto an already-loaded page doesn't reload it, so listen for it.
+  useEffect(() => {
+    const onHashChange = () => {
+      if (!isAdminHash()) return;
+      if (userRef.current?.role === "admin") {
+        clearAdminHash();
+        setPage("admin");
+      } else {
+        setPage("admin-login");
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   // Handle password recovery links
   useEffect(() => {
     const hash = window.location.hash || "";
-    const search = window.location.search || "";
-    const isRecoveryLink =
-      hash.includes("type=recovery") ||
-      new URLSearchParams(search).get("type") === "recovery";
     const isExpiredOrInvalidLink =
       hash.includes("error=access_denied") || hash.includes("otp_expired");
-    if (isRecoveryLink || isExpiredOrInvalidLink) {
-      setPage("forgot-password");
+    if (isExpiredOrInvalidLink) {
+      setPage("forgot-password"); // let them request a fresh link
     }
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setPage("forgot-password");
+        setPage("reset-password");
       }
     });
     return () => listener?.subscription?.unsubscribe();
@@ -113,6 +164,7 @@ function App() {
     const wasMentor = user?.role === "mentor";
     setUser(null);
     localStorage.removeItem("bct_user");
+    clearAdminHash();
     try {
       await supabase.auth.signOut();
     } catch (err) {
@@ -127,6 +179,34 @@ function App() {
     }
   };
 
+  const renderAdminLogin = () => (
+    <AdminLogin
+      onLogin={(adminUser) => {
+        setUser(adminUser);
+        setPage("admin");
+      }}
+      onGoToAdmin={() => setPage("admin")}
+      onGoToForgotPassword={(role) => {
+        setForgotRole(role || "admin");
+        setPage("forgot-password");
+      }}
+      onBack={() => setPage("home")}
+    />
+  );
+
+  // Returning from Stripe Checkout: confirm payment, save address, send email
+  if (paymentSessionId) {
+    return (
+      <Verification
+        sessionId={paymentSessionId}
+        onComplete={() => {
+          setPaymentSessionId(null);
+          setPage("login");
+        }}
+      />
+    );
+  }
+
   if (!checkedStorage) {
     return null;
   }
@@ -136,18 +216,19 @@ function App() {
       <LoginPage
         onBack={() => setPage("home")}
         onGoToSignup={() => setPage("signup")}
-        onGoToForgotPassword={() => setPage("forgot-password")}
-        onGoToAdmin={() => setPage("admin")}
+        onGoToForgotPassword={(r) => { setForgotRole(r); setPage("forgot-password"); }}
+        onGoToAdmin={() => setPage("admin-login")}
         onLogin={(userData) => {
           setUser(userData);
-          if (userData.role === "mentor") {
-            setPage("mentor-portal");
-          } else if (userData.role !== "admin") {
-            setPage("dashboard");
-          }
+          setPage(pageForRole(userData.role));
         }}
       />
     );
+  }
+
+  // Hidden admin sign-in (reached via /#admin or the footer link on the homepage)
+  if (page === "admin-login") {
+    return renderAdminLogin();
   }
 
   if (page === "mentor-portal") {
@@ -157,8 +238,8 @@ function App() {
         <LoginPage
           onBack={() => setPage("home")}
           onGoToSignup={() => setPage("signup")}
-          onGoToForgotPassword={() => setPage("forgot-password")}
-          onGoToAdmin={() => setPage("admin")}
+          onGoToForgotPassword={(r) => { setForgotRole(r); setPage("forgot-password"); }}
+          onGoToAdmin={() => setPage("admin-login")}
           onLogin={(userData) => {
             setUser(userData);
             setPage(pageForRole(userData.role));
@@ -178,16 +259,24 @@ function App() {
   }
 
   if (page === "admin") {
+    // Guard: only a signed-in admin can see the dashboard
+    if (!user || user.role !== "admin") {
+      return renderAdminLogin();
+    }
     return <Admin user={user} onLogout={handleLogout} />;
   }
 
   if (page === "forgot-password") {
     return (
       <ForgotPasswordPage
-        onBack={() => setPage("login")}
-        onDone={() => setPage("login")}
+        initialRole={forgotRole}
+        onBack={() => setPage(forgotRole === "admin" ? "admin-login" : "login")}
       />
     );
+  }
+
+  if (page === "reset-password") {
+    return <ResetPasswordPage onDone={() => setPage("login")} />;
   }
 
   if (page === "signup") {
@@ -261,6 +350,7 @@ function App() {
       onLoginClick={() => setPage("login")}
       onSignupClick={() => setPage("signup")}
       onMentorClick={() => setPage("mentor")}
+      onAdminClick={() => setPage("admin-login")}
     />
   );
 }

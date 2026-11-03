@@ -1,8 +1,57 @@
 import { useState } from "react";
 import "./Signup.css";
-import { supabase } from "./supabaseClient";
 
-export default function Signup({ onGoToPayment }) {
+// File lives in /public, so it is served from the site root.
+const TERMS_PDF_URL = encodeURI(
+  `${import.meta.env.BASE_URL}Terms and conditions contract for project.pdf`
+);
+
+/**
+ * Validates a South African ID number (YYMMDDSSSSCAZ).
+ * Returns an error string if invalid, or "" if valid.
+ *  - 13 digits
+ *  - first 6 digits are a real date of birth (not in the future)
+ *  - 11th digit (citizenship) is 0 or 1
+ *  - 13th digit passes the Luhn checksum
+ */
+const validateSAId = (id) => {
+  if (!/^\d{13}$/.test(id)) return "ID must be 13 digits";
+
+  // --- Date of birth (YYMMDD) ---
+  const yy = parseInt(id.slice(0, 2), 10);
+  const mm = parseInt(id.slice(2, 4), 10);
+  const dd = parseInt(id.slice(4, 6), 10);
+
+  // Assume 20YY; if that's in the future, it must be 19YY
+  let year = 2000 + yy;
+  if (new Date(year, mm - 1, dd) > new Date()) year = 1900 + yy;
+
+  const dob = new Date(year, mm - 1, dd);
+  const validDate =
+    dob.getFullYear() === year &&
+    dob.getMonth() === mm - 1 &&
+    dob.getDate() === dd;
+  if (!validDate) return "ID contains an invalid date of birth";
+
+  // --- Citizenship digit (11th): 0 = citizen, 1 = permanent resident ---
+  if (id[10] !== "0" && id[10] !== "1") return "Invalid ID number";
+
+  // --- Luhn checksum ---
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    let digit = parseInt(id[12 - i], 10); // walk from the right
+    if (i % 2 === 1) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+    sum += digit;
+  }
+  if (sum % 10 !== 0) return "Invalid ID number";
+
+  return "";
+};
+
+export default function Signup({ onGoToPayment, onGoToLogin }) {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -21,7 +70,10 @@ export default function Signup({ onGoToPayment }) {
     if (!form.firstName.trim()) newErrors.firstName = "First name required";
     if (!form.lastName.trim()) newErrors.lastName = "Last name required";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "Invalid email";
-    if (!/^\d{13}$/.test(form.idNumber)) newErrors.idNumber = "ID must be 13 digits";
+
+    const idError = validateSAId(form.idNumber);
+    if (idError) newErrors.idNumber = idError;
+
     if (form.password.length < 6) newErrors.password = "Password too short";
     if (form.password !== form.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     if (!form.agreeTerms) newErrors.agreeTerms = "You must agree to terms";
@@ -65,7 +117,7 @@ export default function Signup({ onGoToPayment }) {
     { label: "Symbol",     met: /[^A-Za-z0-9]/.test(form.password) },
   ];
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const validationErrors = validate();
@@ -77,32 +129,18 @@ export default function Signup({ onGoToPayment }) {
     setLoading(true);
 
     try {
-      // Step 1: Create Supabase Auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-      });
-
-      if (authError) {
-        alert(authError.message || "Signup failed");
-        return;
-      }
-
-      // Step 2: Insert into clients table
-      const { error: insertError } = await supabase
-        .from("clients")
-        .insert([{
-          first_name: form.firstName,
-          last_name: form.lastName,
+      // Nothing is saved to the database yet. The account is only created
+      // after Stripe confirms payment. Keep the details in this tab until then.
+      sessionStorage.setItem(
+        "bct_pending",
+        JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
           email: form.email,
-          id_number: form.idNumber,
-        }])
-        .select();
-
-      if (insertError) {
-        alert(insertError.message || "Failed to save client details");
-        return;
-      }
+          idNumber: form.idNumber,
+          password: form.password,
+        })
+      );
 
       const payload = {
         firstName: form.firstName,
@@ -112,12 +150,7 @@ export default function Signup({ onGoToPayment }) {
         idNumber: form.idNumber,
       };
 
-      localStorage.setItem("bct_user", JSON.stringify(payload));
-
-      if (onGoToPayment) {
-        onGoToPayment(payload);
-      }
-
+      if (onGoToPayment) onGoToPayment(payload);
     } catch (err) {
       console.error("Error:", err);
       alert("Something went wrong");
@@ -257,7 +290,15 @@ export default function Signup({ onGoToPayment }) {
                 checked={form.agreeTerms}
                 onChange={handleChange}
               />
-              I agree to the <a href="#" className="terms-link">Terms & Conditions</a>
+              I agree to the{" "}
+              <a
+                href={TERMS_PDF_URL}
+                download="Terms and Conditions.pdf"
+                className="terms-link"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Terms & Conditions
+              </a>
             </label>
             {errors.agreeTerms && <span className="field-error">{errors.agreeTerms}</span>}
           </div>
@@ -265,17 +306,26 @@ export default function Signup({ onGoToPayment }) {
           <button type="submit" className="signup-btn" disabled={loading}>
             {loading ? (
               <span className="btn-loading">
-                <span className="spinner" /> Creating Account...
+                <span className="spinner" /> Continuing...
               </span>
             ) : (
-              "Create Account"
+              "Continue to Payment"
             )}
           </button>
 
         </form>
 
         <div className="signup-footer">
-          <p>Already have an account? <button className="login-link" onClick={() => {}}>Sign In</button></p>
+          <p>
+            Already have an account?{" "}
+            <button
+              type="button"
+              className="login-link"
+              onClick={() => onGoToLogin && onGoToLogin()}
+            >
+              Log In
+            </button>
+          </p>
         </div>
 
       </div>

@@ -29,6 +29,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .tp-header h3 {
@@ -36,6 +37,27 @@
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: -0.2px;
+}
+
+.tp-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Small leverage note in the top-right corner */
+.tp-leverage-badge {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--primary, #00c9a7);
+  background: rgba(0, 201, 167, 0.08);
+  border: 1px solid rgba(0, 201, 167, 0.25);
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: help;
 }
 
 .tp-reset-btn {
@@ -64,7 +86,7 @@
 .tp-account-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 14px 10px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
@@ -94,11 +116,20 @@
 .tp-stat-value.positive { color: var(--primary, #00c9a7); }
 .tp-stat-value.negative { color: #ff5e5e; }
 
-/* --- Error banner --- */
+/* --- Error + warning banners --- */
 .tp-error {
   background: rgba(255, 94, 94, 0.08);
   border: 1px solid rgba(255, 94, 94, 0.2);
   color: #ff8a8a;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.tp-warning {
+  background: rgba(255, 170, 51, 0.08);
+  border: 1px solid rgba(255, 170, 51, 0.25);
+  color: #ffbf66;
   font-size: 0.85rem;
   padding: 10px 12px;
   border-radius: 8px;
@@ -164,6 +195,63 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--primary, #00c9a7);
+}
+
+/* --- Margin info row (spans the whole form) --- */
+.tp-margin-info {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a8a1);
+}
+
+.tp-margin-info strong {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  color: #fff;
+  font-weight: 600;
+}
+
+.tp-margin-info-bad {
+  background: rgba(255, 94, 94, 0.06);
+  border-color: rgba(255, 94, 94, 0.25);
+}
+
+.tp-margin-info-bad strong {
+  color: #ff8a8a;
+}
+
+.tp-margin-warning {
+  flex-basis: 100%;
+  color: #ff8a8a;
+  font-weight: 600;
+}
+
+.tp-max-btn {
+  background: rgba(0, 201, 167, 0.08);
+  border: 1px solid rgba(0, 201, 167, 0.25);
+  color: var(--primary, #00c9a7);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tp-max-btn:hover:not(:disabled) {
+  background: rgba(0, 201, 167, 0.16);
+}
+
+.tp-max-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .tp-order-buttons {
@@ -302,20 +390,17 @@
   cursor: not-allowed;
 }
 
-/* --- Responsive --- */
-@media (max-width: 720px) {
-  .tp-order-form {
-    grid-template-columns: 1fr 1fr;
-  }
-  .tp-order-buttons {
-    grid-column: span 2;
-  }
-  .tp-account-summary {
-    grid-template-columns: 1fr;
-  }
+/* --- Footnote --- */
+.tp-footnote {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: var(--text-muted, #94a8a1);
+  opacity: 0.6;
+  text-align: right;
+  letter-spacing: 0.2px;
 }
-/* Append this to TradingPanel.css */
 
+/* --- Risk : reward preview --- */
 .tp-rr-preview {
   display: flex;
   flex-direction: column;
@@ -345,4 +430,20 @@
 .tp-rr-risk-pct {
   opacity: 0.6;
   font-style: italic;
+}
+
+/* --- Responsive --- */
+@media (max-width: 720px) {
+  .tp-order-form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tp-order-buttons {
+    grid-column: span 2;
+  }
+  .tp-account-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .tp-footnote {
+    text-align: left;
+  }
 }

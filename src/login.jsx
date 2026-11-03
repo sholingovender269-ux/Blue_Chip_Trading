@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./Login.css";
 import { supabase } from "./supabaseClient";
 
-export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotPassword, onGoToAdmin }) {
+export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotPassword }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -54,7 +54,7 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
         return;
       }
 
-      // CLIENTS + ADMINS: Step 1 - sign in with Supabase Auth
+      // CLIENTS: Step 1 - sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -63,35 +63,6 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
       if (authError) {
         console.log("Auth error:", authError.message, authError.status);
         setError(authError.message);
-        return;
-      }
-
-      if (role === "admin") {
-        // Step 2 (admin): look them up in the admins table
-        const { data: adminData, error: adminError } = await supabase
-          .from("admins")
-          .select("*")
-          .eq("id", authData.user.id)
-          .single();
-
-        if (adminError || !adminData) {
-          setError("This account is not registered as an admin.");
-          await supabase.auth.signOut();
-          return;
-        }
-
-        const user = {
-          id: adminData.id,
-          firstName: adminData.name,
-          lastName: adminData.surname,
-          name: `${adminData.name} ${adminData.surname}`,
-          email: adminData.email,
-          role: "admin",
-        };
-
-        localStorage.setItem("bct_user", JSON.stringify(user));
-        if (onLogin) onLogin(user);
-        if (onGoToAdmin) onGoToAdmin();
         return;
       }
 
@@ -143,9 +114,8 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
 
             <div className="role-selector">
               {[
-                { id: "client", icon: "📈", label: "Client"  },
-                { id: "mentor", icon: "🎓", label: "Mentor"  },
-                { id: "admin",  icon: "⚙️",  label: "Admin"   },
+                { id: "client", icon: "📈", label: "Client" },
+                { id: "mentor", icon: "🎓", label: "Mentor" },
               ].map(({ id, icon, label }) => (
                 <button
                   key={id}
@@ -183,7 +153,7 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
               <button
                 type="button"
                 className="forgot-link"
-                onClick={onGoToForgotPassword}
+                onClick={() => onGoToForgotPassword && onGoToForgotPassword(role)}
               >
                 Forgot password?
               </button>
