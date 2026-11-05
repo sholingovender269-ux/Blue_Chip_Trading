@@ -1,16 +1,10 @@
 import { supabase } from "./supabaseClient";
 
-// ── Account rules ──────────────────────────────────────────────
-// Leverage 1:500 means you only need 1/500th (0.2%) of a position's
-// value as margin. Margin level = equity / used margin * 100.
 export const LEVERAGE = 500;
 export const MIN_LOT = 0.01;
 export const MARGIN_CALL_LEVEL = 100; // warning below this margin level (%)
 export const STOP_OUT_LEVEL = 50;     // positions auto-close below this margin level (%)
 
-// Roughly standard contract sizes per instrument type — adjust these to
-// match whatever your platform actually models. Kept simple on purpose:
-// P&L = price difference * lot_size * contract_size * direction.
 const CONTRACT_SIZE = {
   XAUUSD: 100,   // 1 lot = 100 oz
   XAGUSD: 5000,
@@ -25,9 +19,6 @@ function getContractSize(symbol) {
   return CONTRACT_SIZE.DEFAULT_FX;
 }
 
-// Decimal places each symbol's price/TP/SL should be rounded and
-// validated to. JPY pairs = 3, other FX = 5. Extend this if you add
-// indices/metals later (e.g. XAUUSD: 2, NAS100: 1).
 export function getSymbolDecimals(symbol) {
   if (symbol?.includes("JPY")) return 3;
   return 5;
@@ -44,11 +35,6 @@ export function calculatePnl({ symbol, side, lotSize, entryPrice, currentPrice }
   return (currentPrice - entryPrice) * direction * lotSize * contractSize;
 }
 
-// Margin (in account currency, USD) needed to hold a position:
-//   position value / leverage
-// For pairs where USD is the base currency (USDJPY, USDCHF) the position
-// value is simply lots * contract size. For everything else (EURUSD,
-// GBPUSD, AUDUSD, XAUUSD ...) it is lots * contract size * price.
 export function calculateRequiredMargin({ symbol, lotSize, price }) {
   const lots = Number(lotSize) || 0;
   const p = Number(price) || 0;
@@ -62,16 +48,12 @@ export function calculateRequiredMargin({ symbol, lotSize, price }) {
   return positionValue / LEVERAGE;
 }
 
-// Largest lot size (rounded down to 0.01) that fits in the free margin.
 export function calculateMaxLots({ symbol, price, freeMargin }) {
   const marginPerLot = calculateRequiredMargin({ symbol, lotSize: 1, price });
   if (marginPerLot <= 0 || freeMargin <= 0) return 0;
   return Math.floor((freeMargin / marginPerLot) * 100) / 100;
 }
 
-// Validates TP/SL against entry price and side. Returns { valid, error }.
-// Buy:  TP must be ABOVE entry, SL must be BELOW entry.
-// Sell: TP must be BELOW entry, SL must be ABOVE entry.
 export function validateTpSl({ symbol, side, entryPrice, takeProfit, stopLoss }) {
   const decimals = getSymbolDecimals(symbol);
   const entry = roundToSymbol(symbol, entryPrice);
@@ -105,10 +87,6 @@ export function validateTpSl({ symbol, side, entryPrice, takeProfit, stopLoss })
   return { valid: true, error: null };
 }
 
-// Computes risk:reward for a trade from entry/SL/TP. Returns null if TP
-// or SL is missing (can't compute a ratio without both legs).
-// Returns { riskPips, rewardPips, ratio, rrLabel } where rrLabel is a
-// friendly "1:2.0" style string, rounded to 1 decimal.
 export function calculateRiskReward({ symbol, side, entryPrice, takeProfit, stopLoss }) {
   if (takeProfit == null || stopLoss == null) return null;
 
@@ -131,8 +109,6 @@ export function calculateRiskReward({ symbol, side, entryPrice, takeProfit, stop
   };
 }
 
-// Dollar risk/reward for a trade, using the same contract-size math as
-// P&L, so the order form can show "you're risking $X to make $Y".
 export function calculateRiskRewardMoney({ symbol, side, lotSize, entryPrice, takeProfit, stopLoss }) {
   const rr = calculateRiskReward({ symbol, side, entryPrice, takeProfit, stopLoss });
   if (!rr) return null;
@@ -144,8 +120,6 @@ export function calculateRiskRewardMoney({ symbol, side, lotSize, entryPrice, ta
   return { ...rr, riskMoney, rewardMoney };
 }
 
-// Checks whether a position's TP or SL has been hit by the current price.
-// Returns "tp", "sl", or null.
 export function checkTpSlHit({ side, currentPrice, takeProfit, stopLoss }) {
   if (side === "buy") {
     if (takeProfit != null && currentPrice >= takeProfit) return "tp";
@@ -157,8 +131,6 @@ export function checkTpSlHit({ side, currentPrice, takeProfit, stopLoss }) {
   return null;
 }
 
-// Fetches the user's demo account, creating one via the SQL function
-// (ensure_demo_account) if it doesn't exist yet.
 export async function getOrCreateDemoAccount() {
   const { data, error } = await supabase.rpc("ensure_demo_account");
   if (error) throw error;
@@ -217,7 +189,6 @@ export async function openPosition({
   return data;
 }
 
-// Updates TP/SL on an already-open position. Pass null to clear either.
 export async function updatePositionTpSl({ positionId, takeProfit, stopLoss }) {
   const { data, error } = await supabase
     .from("demo_positions")
@@ -254,7 +225,6 @@ export async function closePosition({ position, exitPrice }) {
     .single();
   if (updateError) throw updateError;
 
-  // Apply the realized P&L to the account balance.
   const { data: account, error: fetchError } = await supabase
     .from("demo_accounts")
     .select("balance")

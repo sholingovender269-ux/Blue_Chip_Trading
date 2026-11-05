@@ -1,5 +1,4 @@
-/* AdminLogin.css — self-contained (own variables, own class names),
-   so it doesn't depend on or clash with Login.css / homepage.css. */
+
 
 .admin-login-page {
   --al-bg:        #070a09;
@@ -30,7 +29,7 @@
   box-sizing: border-box;
 }
 
-/* faint grid texture */
+
 .admin-login-page::before {
   content: "";
   position: absolute;
@@ -57,7 +56,7 @@
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- header ---------- */
+
 .admin-login-header {
   text-align: center;
   margin-bottom: 34px;
@@ -103,7 +102,7 @@
   font-size: 0.95rem;
 }
 
-/* ---------- form ---------- */
+
 .admin-login-form {
   display: flex;
   flex-direction: column;
@@ -182,7 +181,7 @@
   border-radius: 3px;
 }
 
-/* ---------- error ---------- */
+
 .admin-login-error {
   padding: 12px;
   border-radius: 8px;
@@ -194,7 +193,7 @@
   text-align: center;
 }
 
-/* ---------- submit ---------- */
+
 .admin-login-btn {
   position: relative;
   overflow: hidden;
@@ -249,7 +248,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* ---------- footer ---------- */
+
 .admin-login-footer {
   margin-top: 30px;
   text-align: center;
@@ -275,7 +274,7 @@
   color: #fff;
 }
 
-/* ---------- mobile ---------- */
+
 @media (max-width: 500px) {
   .admin-login-card {
     padding: 42px 24px 36px;

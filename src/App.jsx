@@ -12,32 +12,23 @@ import AdminLogin from "./adminLogin.jsx";
 import MentorApplication from "./mentorApplication.jsx";
 import { supabase } from "./supabaseClient";
 
-// True when the user arrived from a reset email (mentor token link or Supabase client recovery link)
 const isResetLink =
   new URLSearchParams(window.location.search).has("mentor_reset") ||
   (window.location.hash || "").includes("type=recovery");
 
-// True when the URL is yoursite.com/#admin
 const isAdminHash = () => (window.location.hash || "") === "#admin";
 
-// Removes "#admin" from the address bar without reloading or firing hashchange.
 const clearAdminHash = () => {
   try {
     if (isAdminHash()) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   } catch {
-    // ignore
   }
 };
 
-// Lazy-loaded so the mentor portal's CSS (global, generic class names like
-// .main / .section / .error-message) is only loaded for mentors and can't
-// restyle the login, homepage or client pages.
 const MentorApp = lazy(() => import("./Mdashboard.jsx"));
 
-// Shows the real error on screen instead of a blank/black page if the
-// mentor portal fails to load or crashes while rendering.
 class PortalErrorBoundary extends React.Component {
   state = { error: null };
   static getDerivedStateFromError(error) {
@@ -73,16 +64,12 @@ function App() {
     new URLSearchParams(window.location.search).get("session_id")
   );
 
-  // Lets the hashchange listener see the latest user without re-subscribing.
   const userRef = useRef(null);
   userRef.current = user;
 
   const pageForRole = (role) =>
     role === "admin" ? "admin" : role === "mentor" ? "mentor-portal" : "dashboard";
 
-  // On first mount, restore a previous session so refreshing doesn't drop
-  // the user back to the homepage. The stored user is only trusted if
-  // there is still a matching Supabase Auth session.
   useEffect(() => {
     const restore = async () => {
       try {
@@ -94,7 +81,6 @@ function App() {
 
           if (parsed && parsed.id) {
             if (parsed.role === "mentor") {
-              // Mentors have no Supabase Auth session; confirm they still exist.
               const { data } = await supabase.rpc("mentor_exists", {
                 p_id: parsed.id,
               });
@@ -107,8 +93,6 @@ function App() {
 
           if (valid) {
             setUser(parsed);
-            // Someone who isn't an admin opening /#admin should see the
-            // admin sign-in, not get bounced to their own dashboard.
             if (isAdminHash() && parsed.role !== "admin") {
               setPage("admin-login");
             } else {
@@ -129,7 +113,6 @@ function App() {
     restore();
   }, []);
 
-  // Typing #admin onto an already-loaded page doesn't reload it, so listen for it.
   useEffect(() => {
     const onHashChange = () => {
       if (!isAdminHash()) return;
@@ -144,7 +127,6 @@ function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  // Handle password recovery links
   useEffect(() => {
     const hash = window.location.hash || "";
     const isExpiredOrInvalidLink =
@@ -170,8 +152,6 @@ function App() {
     } catch (err) {
       console.error("Sign out failed:", err);
     }
-    // Reload after a mentor logs out so the mentor portal's global CSS is
-    // dropped before the public pages show again.
     if (wasMentor) {
       window.location.reload();
     } else {
@@ -194,7 +174,6 @@ function App() {
     />
   );
 
-  // Returning from Stripe Checkout: confirm payment, save address, send email
   if (paymentSessionId) {
     return (
       <Verification
@@ -226,13 +205,11 @@ function App() {
     );
   }
 
-  // Hidden admin sign-in (reached via /#admin or the footer link on the homepage)
   if (page === "admin-login") {
     return renderAdminLogin();
   }
 
   if (page === "mentor-portal") {
-    // Guard: only a logged-in mentor can see the portal
     if (!user || user.role !== "mentor") {
       return (
         <LoginPage
@@ -259,7 +236,6 @@ function App() {
   }
 
   if (page === "admin") {
-    // Guard: only a signed-in admin can see the dashboard
     if (!user || user.role !== "admin") {
       return renderAdminLogin();
     }
@@ -302,7 +278,6 @@ function App() {
     );
   }
 
-  // Public mentor application (opened from the homepage buttons)
   if (page === "mentor") {
     return (
       <div className="dashboard-page">

@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "./analyze.css";
 
-// Key is stored reversed + base64-encoded so secret scanners don't flag it.
-// Note: this hides it from scanners, not from people reading the site's JS.
 const KEY_ENCODED = "MmNjYzg5YTg0OGE1MWJlY2VmOTE5MDhlZmM0YWRmYjk4NGVlYmE4M2U2ZDJmMDg1YzM4MjE2YTU4MGJhMDM5Yy0xdi1yby1rcw==";
 const getApiKey = () => atob(KEY_ENCODED).split("").reverse().join("");
 
@@ -11,12 +9,8 @@ const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const FCS_API_KEY = "qPsf0edpNixeEn35uJSkXFwstbp7Gso1v";
 const FCS_API_URL = "https://api-v4.fcsapi.com/forex/latest";
 
-// Free OpenRouter models, tried in order until one answers. The free list
-// rotates often: check openrouter.ai/models (filter: Free) and update these.
-// NOTE: thinkingmachines/inkling:free is left out on purpose — it only works
-// inside agentic coding harnesses, not via plain chat completions.
-// openrouter/free is the last resort: a router that picks any free model
-// that supports what the request needs (including images).
+const MAX_TOKENS = 4000;
+
 const VISION_MODELS = [
   "nvidia/nemotron-3.5-super-vl:free",
   "google/gemma-4-31b-it:free",
@@ -83,6 +77,8 @@ As of: ${a.tm} UTC`;
 
 const SYSTEM_PROMPT = `You are an elite technical analyst and trading educator specializing in classical price-action analysis, providing educational technical analysis commentary. This is for learning purposes only, not financial advice, and the user understands all trading decisions are their own responsibility.
 
+SCOPE: You are Blue Chip's trading robot. You only discuss trading and the financial markets: charts, forex, gold, silver, indices, crypto, technical analysis, risk management and trading terms. If someone asks who or what you are, say you are an AI trading robot here to help with trading. If someone asks about anything else (weather, general knowledge, coding, recipes, personal advice and so on), do not answer it. Reply warmly in one or two sentences: say you're a trading robot that can only help with trading, then invite them to share a chart or ask a market question. Never use phrases like "as an AI I cannot", and never say you lack real-time data as the reason. It's simply outside what you do.
+
 Your analysis is built around three core tools — you do NOT use smart money concepts, ICT terminology, order blocks, or liquidity-sweep language. Stick strictly to:
 
 1. SUPPORT & RESISTANCE — identify major and minor horizontal support/resistance levels, prior swing highs/lows, and any zones showing repeated rejection or consolidation
@@ -102,6 +98,15 @@ For every chart analysis provide, as educational commentary:
 Be precise and professional. If the setup is not clear say so. End every analysis with a one-line reminder that this is educational content, not financial advice.`;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const extractReply = (data) => {
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content.map((p) => (typeof p === "string" ? p : p?.text || "")).join("");
+  }
+  return "";
+};
 
 export default function Analyze({ user }) {
   const [messages, setMessages] = useState([
@@ -197,7 +202,6 @@ export default function Analyze({ user }) {
       const { response, data } = result;
       lastResult = { response, data, model };
 
-      // Bad key: no point trying the other models.
       if (response.status === 401 || response.status === 403) return lastResult;
 
       if (!response.ok || data.error) {
@@ -205,9 +209,11 @@ export default function Analyze({ user }) {
         continue;
       }
 
-      const reply = data?.choices?.[0]?.message?.content || "";
+      const reply = extractReply(data);
       if (!reply.trim()) {
-        console.warn(`Model ${model} returned an empty reply, trying next in chain.`);
+        console.warn(
+          `Model ${model} returned an empty reply (finish_reason: ${data?.choices?.[0]?.finish_reason}), trying next in chain.`
+        );
         continue;
       }
       if (REFUSAL_PATTERN.test(reply)) {
@@ -215,9 +221,9 @@ export default function Analyze({ user }) {
         continue;
       }
 
-      return lastResult;
+      return { ...lastResult, ok: true };
     }
-    return lastResult;
+    return lastResult ? { ...lastResult, ok: false } : null;
   };
 
   const sendMessage = async (overrideText) => {
@@ -248,7 +254,7 @@ export default function Analyze({ user }) {
       if (currentImage) {
         modelChain = VISION_MODELS;
         baseBody = {
-          max_tokens: 1000,
+          max_tokens: MAX_TOKENS,
           messages: [
             {
               role: "user",
@@ -265,6 +271,7 @@ export default function Analyze({ user }) {
       } else {
         modelChain = TEXT_MODELS;
         baseBody = {
+          max_tokens: MAX_TOKENS,
           messages: [
             { role: "system", content: systemPromptWithLiveData },
             ...historyMessages,
@@ -273,34 +280,30 @@ export default function Analyze({ user }) {
         };
       }
 
-      const { response, data, model } = await callWithFallback(baseBody, modelChain);
+      const result = await callWithFallback(baseBody, modelChain);
+      if (!result) {
+        setMessages((prev) => [...prev, { role: "assistant", text: "⚠️ Couldn't reach the AI service. Check your connection and try again." }]);
+        return;
+      }
+      const { response, data, model, ok } = result;
       console.log(`OpenRouter response (model: ${model}):`, data);
 
-      if (!response.ok || data.error) {
-        let errMsg = data?.error?.metadata?.raw || data?.error?.message || `Request failed (${response.status})`;
+      if (!ok) {
+        let errMsg;
         if (response.status === 401 || response.status === 403) {
           errMsg = "The AI service rejected its API key. Create a new key at openrouter.ai/keys, encode it, and paste it into KEY_ENCODED.";
         } else if (response.status === 429) {
           errMsg = "Rate limit hit on the free tier — wait a minute and try again.";
+        } else if (!response.ok || data.error) {
+          errMsg = data?.error?.metadata?.raw || data?.error?.message || `Request failed (${response.status})`;
+        } else {
+          errMsg = "All free models returned an empty or declined reply. Try again in a moment — free model availability rotates.";
         }
         setMessages((prev) => [...prev, { role: "assistant", text: `⚠️ ${errMsg}` }]);
         return;
       }
 
-      const reply = data?.choices?.[0]?.message?.content || "Sorry, I couldn't get a response. Try again.";
-
-      if (REFUSAL_PATTERN.test(reply)) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            text: "⚠️ All available free models declined to analyze this one. Try rephrasing your question, or try again shortly — free model availability rotates.",
-          },
-        ]);
-        return;
-      }
-
-      setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", text: extractReply(data) }]);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [...prev, { role: "assistant", text: "Something went wrong. Please try again." }]);

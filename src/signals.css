@@ -88,7 +88,7 @@
   color: var(--down);
 }
 
-/* Weekend: market closed */
+
 .market-closed {
   text-align: center;
   padding: 56px 24px;
@@ -121,7 +121,7 @@
   color: var(--text-mid);
 }
 
-/* Page sections: AI signal, mentor signals, news signal */
+
 .signals-section {
   margin-bottom: 44px;
 }
@@ -165,13 +165,13 @@
   color: var(--text-muted);
 }
 
-/* The one AI signal, centred */
+
 .signal-grid {
   display: flex;
   justify-content: center;
 }
 
-/* Mentor-posted signals */
+
 .mentor-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -329,7 +329,7 @@
   color: var(--text-muted);
 }
 
-/* ── Economic Calendar (NFP / CPI / FOMC) ─────────────────────────── */
+
 
 .econ-calendar {
   background: var(--bg-card);
@@ -468,7 +468,7 @@
   background: var(--orange-dim);
 }
 
-/* ── AI signal: controls, status banner, ladder, refresh ──────────── */
+
 
 .signal-controls {
   display: flex;
@@ -534,12 +534,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Card accent by status */
+
 .signal-card.status-enter { border-color: color-mix(in srgb, var(--up) 55%, transparent); box-shadow: 0 0 40px color-mix(in srgb, var(--up) 8%, transparent); }
 .signal-card.status-wait { border-color: color-mix(in srgb, var(--orange) 55%, transparent); box-shadow: 0 0 40px color-mix(in srgb, var(--orange) 8%, transparent); }
 .signal-card.status-out { border-color: color-mix(in srgb, var(--down) 45%, transparent); }
 
-/* Status banner */
+
 .trade-status {
   --tone: var(--text-muted);
   margin: 4px 0 18px;
@@ -638,7 +638,7 @@
   color: var(--orange);
 }
 
-/* Pulsing "live" dot */
+
 .live-dot {
   display: inline-block;
   width: 7px;
@@ -661,7 +661,7 @@
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
-/* Price ladder */
+
 .ladder {
   margin: 30px 8px 6px;
 }
@@ -744,7 +744,7 @@
 .ladder-labels .tp { color: var(--up); }
 .ladder-labels .zone { color: var(--cyan); }
 
-/* Risk / reward row */
+
 .trade-stats {
   display: flex;
   gap: 28px;
@@ -762,7 +762,7 @@
   color: var(--text-muted);
 }
 
-/* ── News signal ──────────────────────────────────────────────────── */
+
 
 .news-section .section-title::before {
   color: var(--orange);
@@ -810,7 +810,7 @@
   text-align: center;
 }
 
-/* ── Mobile ── */
+
 @media (max-width: 700px) {
   .signals-page {
     padding: 32px 20px 40px;

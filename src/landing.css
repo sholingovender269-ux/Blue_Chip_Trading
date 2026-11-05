@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 .dashboard-page {
-  /* Near-black terminal base */
+  
   --bg-dark:        #060708;
   --bg-card:        #0d0f13;
   --bg-card-hover:  #13161c;
 
-  /* Multi-accent system — each color carries meaning, not decoration */
+  
   --cyan:           #22d3ee;
   --cyan-dim:       rgba(34, 211, 238, 0.12);
   --cyan-border:    rgba(34, 211, 238, 0.3);
@@ -54,7 +54,7 @@
   position: relative;
 }
 
-/* Faint terminal grid + soft top glow, like a scanning display */
+
 .dashboard-grid {
   position: fixed;
   inset: 0;
@@ -69,7 +69,7 @@
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
-/* ── Nav ───────────────────────────────────────────── */
+
 
 .dashboard-nav {
   display: flex;
@@ -201,7 +201,7 @@
   background: var(--down-dim);
 }
 
-/* Theme toggle button — sits in nav-right next to the avatar/logout btn */
+
 .theme-toggle-btn {
   width: 38px;
   height: 38px;
@@ -228,7 +228,7 @@
   line-height: 1;
 }
 
-/* ── Welcome ───────────────────────────────────────── */
+
 
 .welcome-banner {
   display: flex;
@@ -272,7 +272,7 @@
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.15);
 }
 
-/* ── Stat cards — each stat gets its own accent, like the reference's badge system ── */
+
 
 .dashboard-stats {
   display: grid;
@@ -365,7 +365,7 @@
 .stat-card-change.neutral  { color: var(--text-muted); }
 .stat-card-change.negative { color: var(--down); }
 
-/* ── Chart section ─────────────────────────────────── */
+
 
 .chart-section {
   margin: 0 56px 28px;
@@ -462,10 +462,7 @@
   width: 100% !important;
 }
 
-/* ── Dashboard content grid ────────────────────────────
-   Market Watch + Forex Sessions sit side by side as the
-   "live feed" pairing; Account Info reads as a distinct
-   ledger card spanning the full width beneath them.      */
+
 
 .dashboard-content {
   display: grid;
@@ -527,8 +524,7 @@
   animation: pulse 2.2s infinite;
 }
 
-/* Weekend / closed state — swaps the pulsing green for a steady muted red,
-   since "closed" shouldn't read as a live/healthy signal. */
+
 .live-badge.closed {
   color: var(--down);
   animation: none;
@@ -640,7 +636,7 @@
 .activity-result.loss { color: var(--down); }
 .activity-result.open { color: var(--text-mid); }
 
-/* Account Info reads as a ledger: label / value rows in two columns on desktop */
+
 .account-list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -670,16 +666,24 @@
   font-size: 0.94rem;
   font-weight: 500;
   color: var(--text-bright);
-  max-width: 220px;
+  flex: 1;
+  min-width: 0;
   text-align: right;
-  word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-mono);
+}
+
+.account-label {
+  flex-shrink: 0;
+  margin-right: 16px;
 }
 
 .account-value.plan   { color: var(--gold); }
 .account-value.status { color: var(--up); }
 
-/* ── Footer ────────────────────────────────────────── */
+
 
 .dashboard-footer {
   text-align: center;
@@ -693,7 +697,7 @@
   font-family: var(--font-mono);
 }
 
-/* ── Responsive ────────────────────────────────────── */
+
 
 @media (max-width: 1280px) {
   .dashboard-nav,
@@ -742,17 +746,13 @@
   }
 }
 
-/* ── AI Assistant z-index safety ── */
+
 .ai-fab,
 .ai-panel {
   z-index: 999;
 }
 
-/* ============================================================
-   DEMO TRADE TAB — chart + paper-trading panel side by side.
-   Reuses existing .chart-section styling untouched; this block
-   only adds the two-column layout wrapper for the new tab.
-   ============================================================ */
+
 
 .demo-trade-section {
   display: grid;
@@ -788,16 +788,7 @@
   }
 }
 
-/* ============================================================
-   LIGHT THEME OVERRIDES
-   ------------------------------------------------------------
-   Dark mode is the default (no attribute needed — the block at
-   the very top of this file keeps working exactly as it does
-   today). When Landing sets <html data-theme="light">, this
-   block overrides the SAME variable names on .dashboard-page,
-   so every rule above that reads var(--bg-dark), var(--text-bright)
-   etc. re-skins automatically with no other CSS edits needed.
-   ============================================================ */
+
 
 :root[data-theme="light"] .dashboard-page {
   --bg-dark:        #f7f3ea;
@@ -832,8 +823,7 @@
   --down-dim:       rgba(209, 58, 82, 0.10);
 }
 
-/* Faint grid + top glow are tuned for a black canvas — dial way
-   down in light mode so it doesn't look like smudges on white. */
+
 :root[data-theme="light"] .dashboard-grid {
   opacity: 0.35;
   background-image:
@@ -842,20 +832,14 @@
     radial-gradient(ellipse 60% 40% at 50% 0%, rgba(8, 145, 178, 0.05), transparent 70%);
 }
 
-/* Sticky nav uses a hardcoded translucent-black background for the
-   blur effect — swap to translucent white in light mode. */
+
 :root[data-theme="light"] .dashboard-nav {
   background: rgba(255, 255, 255, 0.86);
 }
 
-/* ============================================================
-   PROFILE ADDITIONS — append this block to the end of landing.css
-   Reuses existing tokens (--bg-card, --border, --cyan, etc.) so
-   it matches the rest of the dashboard automatically.
-   ============================================================ */
 
-/* Nav avatar: show uploaded photo when present, fall back to
-   the existing initial-in-a-box avatar otherwise. */
+
+
 .user-avatar-wrap {
   width: 38px;
   height: 38px;
@@ -871,8 +855,7 @@
   display: block;
 }
 
-/* Page wrapper so the Profile card sits centered with the same
-   gutter rhythm as the rest of the dashboard content. */
+
 .profile-page-wrap {
   padding: 40px 56px 56px;
   position: relative;

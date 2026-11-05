@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import "./Login.css";
 import { supabase } from "./supabaseClient";
 
-// Landing page for BOTH reset links:
-//   mentors  -> /?mentor_reset=<token>            (custom token, checked by mentor_reset_with_token)
-//   clients  -> Supabase recovery link (#...type=recovery) -> auth.updateUser
 
 const getPasswordStrength = (pwd) => {
   let score = 0;
@@ -39,7 +36,6 @@ export default function ResetPasswordPage({ onDone }) {
     { label: "Symbol",    met: /[^A-Za-z0-9]/.test(password) },
   ];
 
-  // Client flow: wait for Supabase to turn the email link into a recovery session
   useEffect(() => {
     if (isMentor) return;
     supabase.auth.getSession().then(({ data }) => {

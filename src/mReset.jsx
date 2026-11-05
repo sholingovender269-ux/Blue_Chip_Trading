@@ -2,11 +2,6 @@ import React, { useState } from "react";
 import "./mReset.css";
 import { supabase } from "./supabaseClient";
 
-// Change-password page for mentors.
-// Mentors approved in reviewApplication.jsx get a generated password emailed to them and
-// are created with must_change_password = true (see mentor_reset.sql). While that flag is
-// set, Mdashboard.jsx shows only this page. Saving a new password clears the flag.
-// The database function mentor_change_password checks the current password and hashes the new one.
 
 const getPasswordStrength = (pwd) => {
     let score = 0;

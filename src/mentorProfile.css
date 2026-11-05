@@ -1,4 +1,4 @@
-/* Mentor profile. Override these variables to match your theme. */
+
 .mp-card {
   --mp-bg: var(--card-bg, #111a2e);
   --mp-border: var(--border, rgba(255, 255, 255, 0.08));

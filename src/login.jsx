@@ -19,8 +19,6 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
     setLoading(true);
 
     try {
-      // MENTORS: they are not Supabase Auth users. Their (temporary) password
-      // is checked on the server by the mentor_login() SQL function.
       if (role === "mentor") {
         const { data: mentorData, error: mentorError } = await supabase.rpc(
           "mentor_login",
@@ -54,7 +52,6 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
         return;
       }
 
-      // CLIENTS: Step 1 - sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -66,7 +63,6 @@ export default function LoginPage({ onLogin, onBack, onGoToSignup, onGoToForgotP
         return;
       }
 
-      // Step 2 (client): look them up in the clients table
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("*")

@@ -4,17 +4,10 @@ import "./signals.css";
 import { supabase } from "./supabaseClient";
 import { useLivePrices } from "./useLivePrice";
 
-// Key is stored reversed + base64-encoded so secret scanners don't flag it.
-// Note: this hides it from scanners, not from people reading the site's JS.
-// To make it: open the browser console and run
-//   btoa("YOUR_NEW_KEY".split("").reverse().join(""))
-// then paste the result below.
 const KEY_ENCODED = "MmNjYzg5YTg0OGE1MWJlY2VmOTE5MDhlZmM0YWRmYjk4NGVlYmE4M2U2ZDJmMDg1YzM4MjE2YTU4MGJhMDM5Yy0xdi1yby1rcw==";
 const getApiKey = () => atob(KEY_ENCODED).split("").reverse().join("");
 
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
-// Free OpenRouter models, tried in order until one answers. The free list
-// rotates often: check openrouter.ai/models (filter: Free) and update it.
 const FREE_MODELS = [
   "nvidia/nemotron-3.5-super-vl:free",
   "google/gemma-4-31b-it:free",
@@ -33,22 +26,17 @@ const SESSION_WINDOWS = {
   "New York": { start: 15 * 60 + 30, end: 24 * 60, startLabel: "15:30", endLabel: "00:00" },
 };
 
-// The entry zone is the ideal entry +/- this fraction of the stop distance.
 const ZONE_FRACTION = 0.25;
 
-// How often the page re-checks the clock (session rollover, countdowns, stale feed).
 const TICK_MS = 15 * 1000;
 
-// If the price feed hasn't changed for this long, warn that the status may be old.
 const STALE_FEED_MS = 3 * 60 * 1000;
 
-// News signal timing
 const NEWS_PREP_HOURS = 24; // signal is generated this long before the release
 const NEWS_WINDOW_MIN = 120; // setup stays active this long after the release
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Date/time in session time (UTC+2) regardless of the visitor's own time zone.
 function localParts(date = new Date()) {
   const d = new Date(date.getTime() + TZ_OFFSET_HOURS * 3600 * 1000);
   return {
@@ -69,7 +57,6 @@ function getCurrentSession(date = new Date()) {
   return "Asia"; // 00:00 - 09:00
 }
 
-// Minutes left until the current session ends.
 function minutesLeftInSession(date = new Date()) {
   const m = localParts(date).minutes;
   const end = SESSION_WINDOWS[getCurrentSession(date)].end;
@@ -85,14 +72,11 @@ function formatDuration(mins) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-// Forex closes Friday 22:00 UTC and reopens Sunday 22:00 UTC. In session time
-// (UTC+2) that is exactly all of Saturday and Sunday.
 function isMarketClosed(date = new Date()) {
   const day = localParts(date).day;
   return day === 6 || day === 0;
 }
 
-// Monday 00:00 session time, shown in the visitor's own time zone.
 function nextOpenLabel(now = new Date()) {
   const shifted = new Date(now.getTime() + TZ_OFFSET_HOURS * 3600 * 1000);
   const addDays = shifted.getUTCDay() === 6 ? 2 : 1;
@@ -113,11 +97,9 @@ function nextOpenLabel(now = new Date()) {
   });
 }
 
-// "Asia" and "Asian" both match the Asia tab
 const sameSession = (a, b) =>
   String(a || "").toLowerCase().slice(0, 4) === String(b || "").toLowerCase().slice(0, 4);
 
-// Mentors post confidence as 0-100; AI signals use the text "high".
 const isMentorSignal = (s) =>
   s.confidence !== null && s.confidence !== "" && !isNaN(Number(s.confidence));
 
@@ -150,7 +132,6 @@ const timeOf = (s) =>
 const timeWithSeconds = (d) =>
   d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-// fetch() with a hard timeout so a stalled request can't hang the page.
 async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -166,8 +147,6 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 20000) {
   }
 }
 
-// Fallback when live prices haven't arrived: daily reference rates
-// for the same 5 pairs. Free, no key. Good enough for rough levels only.
 async function fetchFallbackPrices() {
   const res = await fetchWithTimeout(
     "https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR,GBP,JPY,CHF,AUD",
@@ -187,7 +166,6 @@ async function fetchFallbackPrices() {
   ];
 }
 
-// Tries each free model in turn until one answers.
 async function callOpenRouter(requestBody) {
   let last = null;
   let lastErr = null;
@@ -311,14 +289,6 @@ async function generateSessionSignal(session, prices, upcomingNews) {
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Economic calendar — NFP, CPI, and FOMC dates.
-//
-// NFP is the first Friday of the month (8:30 AM ET), so it is computed.
-// CPI and FOMC dates are announced individually, so they stay in the manual
-// list below. Add rows from bls.gov/schedule/news_release/cpi.htm and
-// federalreserve.gov/monetarypolicy/fomccalendars.htm when it runs short.
-// ─────────────────────────────────────────────────────────────────────────
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -345,8 +315,6 @@ function generateNfpEvents(monthsAhead = 18) {
     events.push({
       name: "NFP (Jobs Report)",
       type: "NFP",
-      // Built from local parts. toISOString() would shift the date back a day
-      // for anyone ahead of UTC (like South Africa).
       date: `${friday.getFullYear()}-${pad2(friday.getMonth() + 1)}-${pad2(friday.getDate())}`,
       refMonth,
     });
@@ -355,7 +323,6 @@ function generateNfpEvents(monthsAhead = 18) {
 }
 
 const MANUAL_NEWS_EVENTS = [
-  // CPI (8:30 AM ET, ~second week of the month)
   { name: "CPI (Inflation)", type: "CPI", date: "2026-08-12", refMonth: "July 2026" },
   { name: "CPI (Inflation)", type: "CPI", date: "2026-09-11", refMonth: "August 2026" },
   { name: "CPI (Inflation)", type: "CPI", date: "2026-10-14", refMonth: "September 2026" },
@@ -364,7 +331,6 @@ const MANUAL_NEWS_EVENTS = [
   { name: "CPI (Inflation)", type: "CPI", date: "2027-01-13", refMonth: "December 2026" },
   { name: "CPI (Inflation)", type: "CPI", date: "2027-02-11", refMonth: "January 2027" },
 
-  // FOMC rate decision (2:00 PM ET, second day of the meeting)
   { name: "FOMC Rate Decision", type: "FOMC", date: "2026-09-16", refMonth: "Sep 15–16 meeting" },
   { name: "FOMC Rate Decision", type: "FOMC", date: "2026-10-28", refMonth: "Oct 27–28 meeting" },
   { name: "FOMC Rate Decision", type: "FOMC", date: "2026-12-09", refMonth: "Dec 8–9 meeting" },
@@ -372,8 +338,6 @@ const MANUAL_NEWS_EVENTS = [
   { name: "FOMC Rate Decision", type: "FOMC", date: "2027-03-17", refMonth: "Mar 16–17 meeting" },
 ];
 
-// Release time in New York wall-clock time. Converted properly, including
-// daylight saving, so the countdown is right all year.
 const EVENT_TIME_ET = {
   NFP: [8, 30],
   CPI: [8, 30],
@@ -417,7 +381,6 @@ function eventDateET(dateStr, type) {
   return new Date(wallClockAsUTC - offset * 60000);
 }
 
-// Every event (past and future), sorted by release time.
 function getAllEvents() {
   return [...generateNfpEvents(18), ...MANUAL_NEWS_EVENTS]
     .map((e) => ({ ...e, key: `${e.type}-${e.date}`, eventDate: eventDateET(e.date, e.type) }))
@@ -431,8 +394,6 @@ function getUpcomingEvents() {
     .map((e) => ({ ...e, daysUntil: Math.ceil((e.eventDate - now) / (1000 * 60 * 60 * 24)) }));
 }
 
-// The event the News Signal section should show: one that was released within
-// the last NEWS_WINDOW_MIN minutes (still tradeable), otherwise the next one.
 function getFocusEvent(now = new Date()) {
   const all = getAllEvents();
   const windowMs = NEWS_WINDOW_MIN * 60 * 1000;
@@ -459,21 +420,6 @@ function formatEventWhen(date) {
   });
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Is the setup still valid? Compares the live price with the saved levels.
-//
-// Entry zone = entry +/- 25% of the stop distance. Then:
-//   in the zone ........................ ENTER   (setup is active)
-//   moved past the zone toward target .. WAIT    (don't chase, wait for pullback)
-//                                        ...or INVALID if reward:risk from here < 1:1
-//   moved past the zone toward the stop  WAIT    (wait for price to come back)
-//                                        ...or INVALID if 60%+ of the way to the stop
-//   stop level touched ................. INVALID
-//   target already reached ............. INVALID
-//   session / window is over ........... EXPIRED
-//
-// `opts` lets the News Signal reuse this with its own wording and clock.
-// ─────────────────────────────────────────────────────────────────────────
 function evaluateSetup(signal, price, isCurrent, now, opts = {}) {
   const pair = signal.pair;
   const buy = String(signal.direction).toLowerCase() === "buy";
@@ -570,7 +516,6 @@ function evaluateSetup(signal, price, isCurrent, now, opts = {}) {
     };
   }
 
-  // d < -zone: price is on the wrong side of the entry zone
   if (d <= -0.6 * risk) {
     return {
       ...base, facts, state: "out", icon: "✕",
@@ -585,8 +530,6 @@ function evaluateSetup(signal, price, isCurrent, now, opts = {}) {
   };
 }
 
-// News version: before the release it always says WAIT, after the release it
-// uses the normal checks for NEWS_WINDOW_MIN minutes, then it expires.
 function evaluateNewsSetup(signal, price, now, event) {
   const start = event.eventDate.getTime();
   const end = start + NEWS_WINDOW_MIN * 60 * 1000;
@@ -606,7 +549,6 @@ function evaluateNewsSetup(signal, price, now, event) {
   const base = evaluateSetup(signal, price, true, now, { ...newsOpts, minutesLeft: minsToEnd });
 
   if (t < start) {
-    // Levels already blown before the news even came out.
     if (base.state === "out") return base;
 
     const minsToEvent = Math.ceil((start - t) / 60000);
@@ -627,14 +569,6 @@ function evaluateNewsSetup(signal, price, now, event) {
   return base;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// News signal: ask the AI for several candidate trades around the event, then
-// keep the single valid one with the highest confidence.
-//
-// Saved in the same `signals` table as the AI session signals:
-//   type = "News", session = the event key (e.g. "NFP-2026-11-06"),
-//   date = the event date, confidence = the 0-100 score stored as text.
-// ─────────────────────────────────────────────────────────────────────────
 function buildNewsPrompt(event) {
   return `You are a trading signals generator for a forex trading platform. A high-impact US economic release is coming up: ${event.name} (${event.type}), reference: ${event.refMonth}, release time ${EVENT_LABEL_TIME[event.type]}.
 
@@ -707,7 +641,6 @@ async function generateNewsSignal(event, prices) {
       const reward = Math.abs(tp - entry);
       if (risk <= 0 || reward / risk < 1.4) return null;
 
-      // Entry must be close to the real price for that pair.
       const live = prices.find((p) => normPair(p.pair) === normPair(c.pair));
       if (!live) return null;
       if (toPips(c.pair, entry - Number(live.close)) > 15) return null;
@@ -800,7 +733,6 @@ function EconomicCalendar() {
   );
 }
 
-// Price ladder: stop, entry zone, target and where the live price is now.
 function Ladder({ signal, price, ev }) {
   const SL = Number(signal.stop_loss);
   const TP = Number(signal.take_profit);
@@ -839,8 +771,6 @@ function Ladder({ signal, price, ev }) {
   );
 }
 
-// One signal card, used for the AI signal, the news signal and mentor signals.
-// Pass `ev` (from evaluateSetup / evaluateNewsSetup) for the detailed version.
 function SignalCard({
   signal,
   featured = false,
@@ -1005,7 +935,6 @@ export default function SignalsPage({ priceData = [] }) {
   const [checkedAt, setCheckedAt] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // News signal state (stored in public.signals with type = "News")
   const [newsEvent, setNewsEvent] = useState(() => getFocusEvent(new Date()));
   const [newsSignal, setNewsSignal] = useState(null);
   const [newsLoading, setNewsLoading] = useState(true);
@@ -1018,10 +947,6 @@ export default function SignalsPage({ priceData = [] }) {
   const triedNewsRef = useRef(new Set()); // event keys already generated or in flight this pageload
   const mountedRef = useRef(true);
 
-  // ── Live prices ────────────────────────────────────────────────────────
-  // Primary source: the same live price store the trading panel uses, so the
-  // status keeps moving on its own. Then the page's priceData prop, then the
-  // daily reference rates as a last resort.
   const { prices: liveMap } = useLivePrices();
   const hookRows = useMemo(
     () =>
@@ -1037,7 +962,6 @@ export default function SignalsPage({ priceData = [] }) {
   const liveRowsRef = useRef(liveRows);
   liveRowsRef.current = liveRows;
 
-  // A string key, so effects only run when prices actually change.
   const priceKey = liveRows.map((p) => `${p.pair}:${p.close}`).join("|");
 
   useEffect(() => {
@@ -1047,18 +971,15 @@ export default function SignalsPage({ priceData = [] }) {
     };
   }, []);
 
-  // Give live prices a few seconds to arrive before using the fallback.
   useEffect(() => {
     const id = setTimeout(() => setPriceWaitDone(true), PRICE_WAIT_MS);
     return () => clearTimeout(id);
   }, []);
 
-  // Every time a fresh price arrives, note when the setup was last checked.
   useEffect(() => {
     if (priceKey) setCheckedAt(new Date());
   }, [priceKey]);
 
-  // Load today's signals, and reload whenever one is posted or deleted.
   useEffect(() => {
     let cancelled = false;
 
@@ -1094,7 +1015,6 @@ export default function SignalsPage({ priceData = [] }) {
     };
   }, [dayKey]);
 
-  // Load mentor-posted signals from the last 24 hours (own table), live.
   useEffect(() => {
     let cancelled = false;
 
@@ -1110,7 +1030,6 @@ export default function SignalsPage({ priceData = [] }) {
 
       if (fetchError) console.error("Error loading mentor signals:", fetchError);
       else {
-        // Anything posted while the market was closed (weekend) never shows
         setMentorSignals((data || []).filter((s) => !isMarketClosed(new Date(s.created_at))));
       }
       setMentorLoading(false);
@@ -1129,10 +1048,6 @@ export default function SignalsPage({ priceData = [] }) {
     };
   }, []);
 
-  // Every few seconds: roll over to the next session (by clock time), refresh
-  // the countdowns, catch the day changing and move the news section to the
-  // next event when one finishes. If the user picked a tab themselves, we
-  // leave their tab alone.
   useEffect(() => {
     const id = setInterval(() => {
       const t = new Date();
@@ -1149,14 +1064,12 @@ export default function SignalsPage({ priceData = [] }) {
     return () => clearInterval(id);
   }, [manualPick]);
 
-  // News rows live in the same table, so keep them out of the session cards.
   const aiSignal = signals.find(
     (s) => !isMentorSignal(s) && s.type !== "News" && sameSession(s.session, activeSession)
   );
   const hasAi = Boolean(aiSignal);
   const isViewingCurrent = activeSession === currentSession;
 
-  // Daily reference rates, only used for the status when live prices are missing.
   const loadFallback = async () => {
     try {
       const rows = await fetchFallbackPrices();
@@ -1172,11 +1085,8 @@ export default function SignalsPage({ priceData = [] }) {
   useEffect(() => {
     if ((!hasAi && !newsSignal) || !priceWaitDone || liveRows.length > 0) return;
     loadFallback();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasAi, Boolean(newsSignal), priceWaitDone, liveRows.length]);
 
-  // No AI signal for the CURRENT session yet: generate ONE and save it.
-  // (Only the current session is generated, so levels always match the market now.)
   useEffect(() => {
     if (marketClosed || loading || hasAi || !isViewingCurrent) return;
     if (liveRowsRef.current.length === 0 && !priceWaitDone) return;
@@ -1190,7 +1100,6 @@ export default function SignalsPage({ priceData = [] }) {
       setGeneratingFor(session);
       setGenErrors((prev) => ({ ...prev, [session]: null }));
       try {
-        // Someone else may have generated it a moment ago: use theirs.
         const { data: existing } = await supabase
           .from("signals")
           .select("*")
@@ -1233,7 +1142,6 @@ export default function SignalsPage({ priceData = [] }) {
     })();
   }, [marketClosed, loading, hasAi, activeSession, isViewingCurrent, priceWaitDone, retryTick]);
 
-  // ── News signal: load the saved one for the focus event, live ──────────
   const newsKey = newsEvent?.key || null;
 
   useEffect(() => {
@@ -1286,8 +1194,6 @@ export default function SignalsPage({ priceData = [] }) {
     };
   }, [newsKey]);
 
-  // News signal: generate ONE when the event is within NEWS_PREP_HOURS of its
-  // release (or just released), nobody has generated it yet, and the market is open.
   const newsPrepStart = newsEvent ? newsEvent.eventDate.getTime() - NEWS_PREP_HOURS * 3600 * 1000 : 0;
   const newsWindowEnd = newsEvent ? newsEvent.eventDate.getTime() + NEWS_WINDOW_MIN * 60 * 1000 : 0;
   const inNewsPrep = Boolean(newsEvent) && now.getTime() >= newsPrepStart && now.getTime() < newsWindowEnd;
@@ -1318,7 +1224,6 @@ export default function SignalsPage({ priceData = [] }) {
       setNewsGenerating(true);
       setNewsGenError(null);
       try {
-        // Someone else may have generated it a moment ago: use theirs.
         const saved = await fetchSaved();
         if (saved) {
           if (mountedRef.current) setNewsSignal(saved);
@@ -1340,7 +1245,6 @@ export default function SignalsPage({ priceData = [] }) {
           return;
         }
 
-        // If two visitors saved at once, everyone shows the earliest one.
         const winner = await fetchSaved();
         if (winner && mountedRef.current) setNewsSignal(winner);
       } catch (err) {
@@ -1378,7 +1282,6 @@ export default function SignalsPage({ priceData = [] }) {
   const generating = generatingFor === activeSession;
   const genError = genErrors[activeSession];
 
-  // True when the live feed exists but hasn't changed for a long time.
   const feedStale = isLive && checkedAt ? now.getTime() - checkedAt.getTime() > STALE_FEED_MS : false;
 
   const pairKey = aiSignal ? normPair(aiSignal.pair) : "";
@@ -1387,7 +1290,6 @@ export default function SignalsPage({ priceData = [] }) {
   const signalIsCurrent = aiSignal ? sameSession(aiSignal.session, currentSession) : false;
   const ev = aiSignal ? evaluateSetup(aiSignal, livePrice, signalIsCurrent, now) : null;
 
-  // News signal view model
   const newsCardSignal = newsSignal
     ? { ...newsSignal, type: "News", session: newsEvent?.type || "" }
     : null;
@@ -1440,7 +1342,7 @@ export default function SignalsPage({ priceData = [] }) {
         </div>
       ) : (
       <>
-      {/* ── 1. AI SIGNAL ─────────────────────────────────────────── */}
+      {}
       <section className="signals-section">
         <div className="section-title-row">
           <h2 className="section-title">
@@ -1494,7 +1396,7 @@ export default function SignalsPage({ priceData = [] }) {
           <div className="signals-status signals-error">{error}</div>
         )}
 
-        {/* Other tabs: no signal saved */}
+        {}
         {!loading && !aiSignal && !isViewingCurrent && activeIdx > currentIdx && (
           <div className="signals-status">
             The {activeSession} session opens at {SESSION_WINDOWS[activeSession].startLabel} (SA time).
@@ -1508,7 +1410,7 @@ export default function SignalsPage({ priceData = [] }) {
           </div>
         )}
 
-        {/* Current session: generating */}
+        {}
         {!loading && !aiSignal && isViewingCurrent && generating && (
           <div className="signals-status">Generating {activeSession} signal…</div>
         )}
@@ -1550,7 +1452,7 @@ export default function SignalsPage({ priceData = [] }) {
         )}
       </section>
 
-      {/* ── 2. MENTOR SIGNALS ───────────────────────────────────── */}
+      {}
       <section className="signals-section">
         <div className="section-title-row">
           <h2 className="section-title">
@@ -1576,7 +1478,7 @@ export default function SignalsPage({ priceData = [] }) {
       </>
       )}
 
-      {/* ── 3. NEWS SIGNAL ──────────────────────────────────────── */}
+      {}
       <section className="signals-section news-section">
         <div className="section-title-row">
           <h2 className="section-title">

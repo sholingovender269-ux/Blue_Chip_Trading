@@ -1,7 +1,4 @@
-/* =========================================
-   MENTOR RESET (mReset.css) PAGE
-   Uses the same palette as Mdashboard.css
-========================================= */
+
 
 .reset-wrap {
     width: 100%;
@@ -101,13 +98,13 @@
     cursor: not-allowed;
 }
 
-/* Nav links locked during the forced first-login reset */
+
 .nav-locked {
     opacity: 0.4;
     pointer-events: none;
 }
 
-/* ---------- Password strength ---------- */
+
 .pw-meter {
     display: flex;
     align-items: center;

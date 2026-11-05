@@ -9,7 +9,6 @@ const EMAILJS_PUBLIC_KEY = "iJf91K9SaKpnpTDzB";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Sends the email with up to 3 attempts and returns { ok, error }
 async function sendWelcomeEmail(params) {
   let lastError = "";
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -108,7 +107,6 @@ export default function Verification({ sessionId, onComplete }) {
       setStatus("Processed");
       setMessage("Verification complete.");
 
-      // Keep the repo path (e.g. /my-repo/) and only drop ?session_id=...
       window.history.replaceState({}, "", window.location.pathname);
 
       setTimeout(() => onComplete && onComplete(), 4000);

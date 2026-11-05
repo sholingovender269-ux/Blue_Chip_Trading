@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-/* ================================================================== */
-/*  COURSES PAGE — academy grid                                        */
-/* ================================================================== */
+
+
+
 
 .courses-page {
   --bg-dark: #060708;
@@ -83,7 +83,7 @@
   font-size: 1.02rem;
 }
 
-/* ---------- Progress bar (shared) ---------- */
+
 .progress-wrap {
   display: flex;
   align-items: center;
@@ -113,9 +113,9 @@
   white-space: nowrap;
 }
 
-/* ================================================================== */
-/*  FLAGSHIP HERO                                                      */
-/* ================================================================== */
+
+
+
 
 .fh {
   position: relative;
@@ -286,9 +286,9 @@
   color: var(--text-mid);
 }
 
-/* ================================================================== */
-/*  SECTIONS & COURSE CARDS                                            */
-/* ================================================================== */
+
+
+
 
 .course-section {
   position: relative;
@@ -437,7 +437,7 @@
 .course-card.is-finished { border-color: rgba(74, 222, 128, 0.3); }
 .course-card.is-finished .progress-fill { background: #4ade80; }
 
-/* ---------- Downloads ---------- */
+
 
 .downloads-section {
   position: relative;
@@ -493,9 +493,9 @@
   .courses-header h1 { font-size: 1.9rem; }
 }
 
-/* ================================================================== */
-/*  COURSE VIEWER (all courses, incl. Blue Chip Method)                */
-/* ================================================================== */
+
+
+
 
 .bc-page {
   --bg-dark: #060708;
@@ -614,7 +614,7 @@
   color: var(--text-muted);
 }
 
-/* --- Layout --- */
+
 
 .bc-body {
   position: relative;
@@ -683,7 +683,7 @@
   opacity: 1;
 }
 
-/* --- Lessons --- */
+
 
 .bc-lessons {
   display: flex;
@@ -749,7 +749,7 @@
 .bc-lesson-content ul.checklist { margin-left: 0; }
 .bc-lesson-content strong { color: var(--text-bright); }
 
-/* --- Content blocks --- */
+
 
 .step-list {
   display: flex;
@@ -863,7 +863,7 @@
 
 .callout.warn .callout-label { color: var(--warn); }
 
-/* --- Mark complete button --- */
+
 
 .complete-btn {
   width: 100%;

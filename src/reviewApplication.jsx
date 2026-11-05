@@ -3,7 +3,6 @@ import emailjs from "@emailjs/browser";
 import "./reviewApplication.css";
 import { supabase } from "./supabaseClient";
 
-// ── EmailJS (mentor login email) ─────────────────────────────
 const EMAILJS_SERVICE_ID = "service_4b2fz1k";
 const EMAILJS_MENTOR_TEMPLATE_ID = "template_etls1p7"; // ← paste your new template ID
 const EMAILJS_PUBLIC_KEY = "6DOd8MA5teVeCoE26";
@@ -38,21 +37,18 @@ function formatDate(iso) {
   });
 }
 
-// Only allow http(s) links so a malicious applicant can't inject javascript: URLs
 function safeUrl(url) {
   if (!url) return null;
   const trimmed = url.trim();
   return /^https?:\/\//i.test(trimmed) ? trimmed : null;
 }
 
-// Splits "John Michael Smith" → first: "John", last: "Michael Smith"
 function splitName(fullName) {
   const parts = (fullName || "").trim().split(/\s+/);
   const first = parts.shift() || "";
   return { first, last: parts.join(" ") };
 }
 
-// Random temporary password (no look-alike characters like 0/O or 1/l)
 function generatePassword(length = 12) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
   const bytes = new Uint32Array(length);
@@ -144,11 +140,9 @@ export default function ReviewApplication() {
     setTimeout(() => setNotice(null), 4000);
   };
 
-  // ── Accept: approve → create mentor (hashed temp password) → email login details ──
   const handleAccept = async (app) => {
     setBusyId(app.id);
 
-    // 1. Mark application approved
     const { data, error } = await supabase
       .from("mentor_applications")
       .update({ status: "approved" })
@@ -162,7 +156,6 @@ export default function ReviewApplication() {
       return;
     }
 
-    // 2. Create the mentor (the database hashes the temporary password)
     const { first, last } = splitName(app.full_name);
     const tempPassword = generatePassword();
 
@@ -177,7 +170,6 @@ export default function ReviewApplication() {
     });
 
     if (mentorErr) {
-      // Roll back so nothing is left half-done
       await supabase.from("mentor_applications").update({ status: "pending" }).eq("id", app.id);
       setBusyId(null);
       console.error("Create mentor error:", mentorErr);
@@ -190,7 +182,6 @@ export default function ReviewApplication() {
       return;
     }
 
-    // 3. Email the login details
     const emailed = await sendMentorEmail(first, app.email, tempPassword);
 
     setBusyId(null);
@@ -199,7 +190,6 @@ export default function ReviewApplication() {
     if (emailed) {
       showNotice("ok", `${app.full_name} accepted. Login details were emailed to ${app.email}.`);
     } else {
-      // Email failed → show the password so you can send it manually
       setCopied(false);
       setCredentials({ name: app.full_name, email: app.email, password: tempPassword });
     }
@@ -214,7 +204,6 @@ export default function ReviewApplication() {
     }
   };
 
-  // ── Deny: delete the row ──
   const handleDeny = async (app) => {
     setBusyId(app.id);
     const { data, error } = await supabase
@@ -236,7 +225,7 @@ export default function ReviewApplication() {
 
   return (
     <div className="ra-page">
-      {/* ── Stats ── */}
+      {}
       <div className="ra-stats">
         <div className="ra-stat" style={{ "--ra-accent": "var(--cyan, #22d3ee)" }}>
           <span className="ra-stat-label">Total</span>
@@ -252,7 +241,7 @@ export default function ReviewApplication() {
         </div>
       </div>
 
-      {/* ── Toolbar ── */}
+      {}
       <div className="ra-toolbar">
         <div className="ra-filters">
           {FILTERS.map((f) => (
@@ -281,7 +270,7 @@ export default function ReviewApplication() {
       {notice && <div className={`ra-notice ${notice.type}`}>{notice.text}</div>}
       {loadError && <div className="ra-notice error">{loadError}</div>}
 
-      {/* ── List ── */}
+      {}
       <div className="ra-list">
         {loading && <div className="ra-empty">Loading applications…</div>}
 
@@ -299,7 +288,7 @@ export default function ReviewApplication() {
 
             return (
               <div className={`ra-card ${isOpen ? "open" : ""}`} key={app.id}>
-                {/* Summary row */}
+                {}
                 <div className="ra-card-top">
                   <div className="ra-avatar">{(app.full_name || "?").charAt(0).toUpperCase()}</div>
 
@@ -319,7 +308,7 @@ export default function ReviewApplication() {
                   <span className={`ra-status ${app.status}`}>● {app.status}</span>
                 </div>
 
-                {/* Quick tags */}
+                {}
                 <div className="ra-tags">
                   {app.trading_style && <span className="ra-tag style">{app.trading_style}</span>}
                   {(app.markets || []).map((m) => (
@@ -328,7 +317,7 @@ export default function ReviewApplication() {
                   {app.availability && <span className="ra-tag avail">{app.availability}</span>}
                 </div>
 
-                {/* Expanded details */}
+                {}
                 {isOpen && (
                   <div className="ra-details">
                     <div className="ra-detail-grid">
@@ -352,7 +341,7 @@ export default function ReviewApplication() {
                   </div>
                 )}
 
-                {/* Actions */}
+                {}
                 <div className="ra-actions">
                   <button className="ra-btn ghost" onClick={() => setExpandedId(isOpen ? null : app.id)}>
                     {isOpen ? "Hide details" : "View details"}
@@ -390,7 +379,7 @@ export default function ReviewApplication() {
           })}
       </div>
 
-      {/* ── Mentor credentials modal (shown once after accepting) ── */}
+      {}
       {credentials && (
         <div className="ra-modal-overlay">
           <div className="ra-modal">

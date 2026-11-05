@@ -30,8 +30,6 @@ function formatMoney(n) {
   return `${sign}$${Math.abs(n).toFixed(2)}`;
 }
 
-// Forex prices need more precision than 2 decimals to show real movement.
-// JPY pairs conventionally show 3 decimals; everything else shows 5.
 function formatPrice(symbol, value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "…";
   const decimals = getSymbolDecimals(symbol);
@@ -53,7 +51,6 @@ export default function TradingPanel({ user, activeSymbol }) {
   const [stopOutNotice, setStopOutNotice] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Inline TP/SL editing state for an already-open position.
   const [editingId, setEditingId] = useState(null);
   const [editTp, setEditTp] = useState("");
   const [editSl, setEditSl] = useState("");
@@ -62,19 +59,12 @@ export default function TradingPanel({ user, activeSymbol }) {
   const { price: livePrice, loading: priceLoading, error: priceError } = useLivePrice(symbol);
   const { prices: allPrices } = useLivePrices();
 
-  // Guard so auto-close-on-TP/SL doesn't fire multiple times for the
-  // same position while the close request is in flight.
   const closingRef = useRef(new Set());
 
-  // Keep the panel's symbol in sync if the chart's active symbol changes.
   useEffect(() => {
     if (activeSymbol) setSymbol(activeSymbol);
   }, [activeSymbol]);
 
-  // ── Account metrics (balance / equity / margin) ──────────────
-  // Floating P&L for every open position uses ITS OWN symbol's live
-  // price from the shared multi-symbol store, not just whichever
-  // symbol happens to be selected in the dropdown.
   const floatingPnl = openPositions.reduce((total, pos) => {
     const currentPrice = allPrices[pos.symbol] ?? pos.entry_price;
     return total + calculatePnl({
@@ -89,7 +79,6 @@ export default function TradingPanel({ user, activeSymbol }) {
   const balance = Number(account?.balance ?? 0);
   const equity = balance + floatingPnl;
 
-  // Margin locked up by open positions (fixed at the entry price).
   const usedMargin = openPositions.reduce(
     (total, pos) =>
       total +
@@ -104,7 +93,6 @@ export default function TradingPanel({ user, activeSymbol }) {
   const freeMargin = equity - usedMargin;
   const marginLevel = usedMargin > 0 ? (equity / usedMargin) * 100 : null;
 
-  // What the order currently in the form would cost.
   const formEntryPrice = livePrice ? roundToSymbol(symbol, livePrice) : null;
   const formLots = Math.round(Number(lotSize) * 100) / 100;
   const requiredMargin = formEntryPrice
@@ -140,10 +128,6 @@ export default function TradingPanel({ user, activeSymbol }) {
     loadAccountAndPositions();
   }, [loadAccountAndPositions]);
 
-  // Re-validate TP/SL live as the user types, against the current live
-  // price for the selected symbol (used as a stand-in for entry price
-  // since that's what a market order will fill at). Checked against
-  // both sides since the user hasn't necessarily picked buy/sell yet.
   useEffect(() => {
     if (!livePrice || (!takeProfit && !stopLoss)) {
       setTpSlError(null);
@@ -193,7 +177,6 @@ export default function TradingPanel({ user, activeSymbol }) {
       return;
     }
 
-    // Margin check: the trade must fit inside the free margin.
     const entryPrice = roundToSymbol(symbol, livePrice);
     const marginNeeded = calculateRequiredMargin({ symbol, lotSize: formLots, price: entryPrice });
     if (marginNeeded > freeMargin) {
@@ -248,9 +231,6 @@ export default function TradingPanel({ user, activeSymbol }) {
     }
   }, [allPrices]);
 
-  // Auto-close any open position whose TP or SL has been hit by the
-  // latest price tick for its own symbol. Reacts to edits automatically
-  // since it reads take_profit/stop_loss straight off openPositions.
   useEffect(() => {
     openPositions.forEach((pos) => {
       if (closingRef.current.has(pos.id)) return;
@@ -269,8 +249,6 @@ export default function TradingPanel({ user, activeSymbol }) {
     });
   }, [allPrices, openPositions, handleClosePosition]);
 
-  // Stop-out: if the margin level falls below STOP_OUT_LEVEL, close the
-  // most losing position, one at a time, until the level recovers.
   useEffect(() => {
     if (usedMargin <= 0 || marginLevel === null) return;
     if (marginLevel >= STOP_OUT_LEVEL) return;
@@ -320,7 +298,6 @@ export default function TradingPanel({ user, activeSymbol }) {
     }
   };
 
-  // --- Inline TP/SL editing on an already-open position ---
 
   const startEditTpSl = (pos) => {
     setEditingId(pos.id);
@@ -372,9 +349,6 @@ export default function TradingPanel({ user, activeSymbol }) {
 
   const orderFormDecimals = getSymbolDecimals(symbol);
 
-  // Live risk:reward preview for the order form. Shown for both sides
-  // since the user hasn't necessarily picked Buy/Sell yet — whichever
-  // side the TP/SL actually forms a valid trade for will show a ratio.
   const rrBuyPreview = livePrice && takeProfit && stopLoss
     ? calculateRiskRewardMoney({
         symbol,

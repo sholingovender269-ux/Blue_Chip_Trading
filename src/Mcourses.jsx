@@ -3,20 +3,12 @@ import { supabase } from "./supabaseClient";
 import "./Mystudents.css";      // shared mentor-page variables, navbar, .error-message
 import "./Mcourses.css";
 
-// Same tables the student Courses page reads (courses, lessons, lesson_progress),
-// so anything a mentor creates here shows up for students automatically.
-//   courses : id, slug, title, description, level (beginner|intermediate|advanced),
-//             sort_order, is_flagship, mentor_id (owner)      -> see mentor_courses.sql
-//   lessons : id, course_id, title, description, content_text, content_html,
-//             video_url, read_minutes, sort_order
-// All mentors can read every course. A mentor can only edit/delete their own.
 
 const LEVELS = ["beginner", "intermediate", "advanced"];
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
 const studentKey = (c) => String(c.id ?? c.client_no);
 
-// ---------- helpers ----------
 const escapeHtml = (s) =>
     String(s)
         .replace(/&/g, "&amp;")
@@ -25,7 +17,6 @@ const escapeHtml = (s) =>
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 
-// Students render content_html as HTML, so mentor text is always escaped first.
 const toHtml = (text, videoUrl) => {
     const paras = text
         .trim()
@@ -66,14 +57,10 @@ function MentorCourses({ onNavigate, user }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // modal = null | { type: "course" } | { type: "lesson", lesson?: {...} }
     const [modal, setModal] = useState(null);
     const [form, setForm] = useState(EMPTY_FORM);
     const [saving, setSaving] = useState(false);
 
-    // =========================
-    // LOAD
-    // =========================
 
     useEffect(() => {
         loadAll();
@@ -103,9 +90,6 @@ function MentorCourses({ onNavigate, user }) {
         setLoading(false);
     };
 
-    // =========================
-    // DERIVED DATA
-    // =========================
 
     const isMine = (course) =>
         !!course && !!mentorId && course.mentor_id != null && String(course.mentor_id) === mentorId;
@@ -117,7 +101,6 @@ function MentorCourses({ onNavigate, user }) {
     const courseLessons = lessons.filter((l) => l.course_id === selectedId);
     const lessonCount = (courseId) => lessons.filter((l) => l.course_id === courseId).length;
 
-    // lesson_progress has one row per completed lesson per student
     const completedBy = {}; // `${course}|${user}` -> completed lesson count
     progress.forEach((p) => {
         const k = `${p.course_id}|${p.user_id}`;
@@ -147,9 +130,6 @@ function MentorCourses({ onNavigate, user }) {
             [c.id, c.user_id, c.auth_id, c.client_no].some((v) => v != null && String(v) === String(uid))
         );
 
-    // =========================
-    // MODALS
-    // =========================
 
     const openCourseModal = () => {
         setForm(EMPTY_FORM);
@@ -191,7 +171,6 @@ function MentorCourses({ onNavigate, user }) {
 
         if (modal.type === "course") {
             const nextOrder = courses.reduce((m, c) => Math.max(m, c.sort_order || 0), 0) + 1;
-            // .select().single() returns the new row so we can open it right away
             result = await supabase
                 .from("courses")
                 .insert({
@@ -243,16 +222,12 @@ function MentorCourses({ onNavigate, user }) {
         closeModal();
         await loadAll();
 
-        // Jump straight to the course that was just created so lessons go into it
         if (newCourseId != null) {
             setScope("all");
             setSelectedId(newCourseId);
         }
     };
 
-    // =========================
-    // DELETE (own courses only)
-    // =========================
 
     const deleteLesson = async (id) => {
         if (!canEdit) return;
@@ -280,9 +255,6 @@ function MentorCourses({ onNavigate, user }) {
         else loadAll();
     };
 
-    // =========================
-    // RENDER
-    // =========================
 
     return (
         <div className="mentor-page">
@@ -321,7 +293,7 @@ function MentorCourses({ onNavigate, user }) {
             </div>
 
             <div className="courses-container">
-                {/* SIDEBAR */}
+                {}
                 <aside className="courses-sidebar">
                     <div className="sidebar-title">
                         <h2>{scope === "mine" ? "My Courses" : "All Courses"}</h2>
@@ -368,7 +340,7 @@ function MentorCourses({ onNavigate, user }) {
                     ))}
                 </aside>
 
-                {/* MAIN AREA */}
+                {}
                 <section className="course-main">
                     {!selected ? (
                         <div className="course-title-section">
@@ -514,7 +486,7 @@ function MentorCourses({ onNavigate, user }) {
                 </section>
             </div>
 
-            {/* MODAL (course or lesson) */}
+            {}
             {modal && (
                 <div className="modal-background" onClick={closeModal}>
                     <div className="lesson-modal" onClick={(e) => e.stopPropagation()}>

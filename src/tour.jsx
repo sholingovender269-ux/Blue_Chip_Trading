@@ -3,7 +3,6 @@ import "./tour.css";
 
 const STORAGE_KEY = "bluechip-tour-done";
 
-// Edit the text here any time. `target` must match a NAV_ITEMS value.
 const STEPS = [
   { target: "dashboard", title: "Dashboard", text: "Your overview: balance, live charts, market watch and forex session times." },
   { target: "account", title: "Account", text: "Manage your profile, photo and personal details." },
@@ -33,7 +32,6 @@ export default function OnboardingTour() {
     try {
       localStorage.setItem(STORAGE_KEY, "1");
     } catch {
-      // ignore storage errors
     }
     setActive(false);
   };
@@ -64,7 +62,6 @@ export default function OnboardingTour() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Nav hidden (e.g. mobile) -> nothing to point at, so don't show the tour
   if (!active || !rect) return null;
 
   const step = STEPS[i];

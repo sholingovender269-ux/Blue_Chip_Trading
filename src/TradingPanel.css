@@ -1,9 +1,4 @@
-/* ============================================================
-   TRADING PANEL — demo/paper trading widget
-   Matches the existing dark terminal aesthetic (teal accent,
-   monospace data labels). All selectors are scoped under
-   .trading-panel so this never leaks into other pages.
-   ============================================================ */
+
 
 .trading-panel {
   background: #0d1210;
@@ -24,7 +19,7 @@
   min-height: 200px;
 }
 
-/* --- Header --- */
+
 .tp-header {
   display: flex;
   align-items: center;
@@ -45,7 +40,7 @@
   gap: 8px;
 }
 
-/* Small leverage note in the top-right corner */
+
 .tp-leverage-badge {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.68rem;
@@ -82,7 +77,7 @@
   cursor: not-allowed;
 }
 
-/* --- Account summary --- */
+
 .tp-account-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -116,7 +111,7 @@
 .tp-stat-value.positive { color: var(--primary, #00c9a7); }
 .tp-stat-value.negative { color: #ff5e5e; }
 
-/* --- Error + warning banners --- */
+
 .tp-error {
   background: rgba(255, 94, 94, 0.08);
   border: 1px solid rgba(255, 94, 94, 0.2);
@@ -135,7 +130,7 @@
   border-radius: 8px;
 }
 
-/* --- Order form --- */
+
 .tp-order-form {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr auto;
@@ -197,7 +192,7 @@
   color: var(--primary, #00c9a7);
 }
 
-/* --- Margin info row (spans the whole form) --- */
+
 .tp-margin-info {
   grid-column: 1 / -1;
   display: flex;
@@ -296,7 +291,7 @@
   box-shadow: 0 8px 20px rgba(255, 94, 94, 0.3);
 }
 
-/* --- Positions section --- */
+
 .tp-positions-section {
   display: flex;
   flex-direction: column;
@@ -390,7 +385,7 @@
   cursor: not-allowed;
 }
 
-/* --- Footnote --- */
+
 .tp-footnote {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 0.66rem;
@@ -400,7 +395,7 @@
   letter-spacing: 0.2px;
 }
 
-/* --- Risk : reward preview --- */
+
 .tp-rr-preview {
   display: flex;
   flex-direction: column;
@@ -432,7 +427,7 @@
   font-style: italic;
 }
 
-/* --- Responsive --- */
+
 @media (max-width: 720px) {
   .tp-order-form {
     grid-template-columns: 1fr 1fr;
@@ -446,4 +441,14 @@
   .tp-footnote {
     text-align: left;
   }
+}
+.tp-symbol-select select {
+  background-color: #0d1210;
+  color: #ffffff;
+  color-scheme: dark;
+}
+
+.tp-symbol-select select option {
+  background-color: #0d1210;
+  color: #ffffff;
 }

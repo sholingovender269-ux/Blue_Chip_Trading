@@ -1,3 +1,4 @@
+
 .community-page {
   display: flex;
   flex-direction: column;
@@ -22,7 +23,7 @@
   color: var(--text-bright);
 }
 
-/* ── Feed ──────────────────────────────────────────── */
+
 
 .community-feed {
   flex: 1;
@@ -68,8 +69,14 @@
 }
 
 @keyframes community-msg-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .community-msg.own {
@@ -77,21 +84,32 @@
   flex-direction: row-reverse;
 }
 
+
+
 .community-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 13px;
   background: var(--purple-dim);
   border: 1px solid var(--purple-border);
   color: var(--purple);
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   margin-top: 2px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.community-avatar:hover {
+  transform: scale(1.05);
+  border-color: var(--cyan);
 }
 
 .community-msg.own .community-avatar {
@@ -99,6 +117,16 @@
   border-color: var(--cyan-border);
   color: var(--cyan);
 }
+
+.community-avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+
 
 .community-msg-body {
   background: var(--bg-card);
@@ -169,7 +197,7 @@
   transform: scale(1.01);
 }
 
-/* ── Remove button ─────────────────────────────────── */
+
 
 .community-msg-delete {
   margin-left: auto;
@@ -197,8 +225,7 @@
   font-size: 0.62rem;
 }
 
-/* Visible on hover of the whole message, and always visible on touch
-   devices (hover doesn't reliably fire there). */
+
 .community-msg:hover .community-msg-delete,
 .community-msg-delete:focus-visible {
   opacity: 1;
@@ -224,7 +251,7 @@
   transform: none;
 }
 
-/* ── Error / info banner ───────────────────────────── */
+
 
 .community-error {
   background: var(--down-dim);
@@ -245,7 +272,7 @@
   font-size: 0.85rem;
 }
 
-/* ── Image preview (before sending) ────────────────── */
+
 
 .community-image-preview {
   position: relative;
@@ -283,7 +310,7 @@
   transform: scale(1.1);
 }
 
-/* ── Composer ──────────────────────────────────────── */
+
 
 .community-composer {
   display: flex;
@@ -366,12 +393,19 @@
   cursor: not-allowed;
 }
 
+
+
 @media (max-width: 700px) {
-  .community-page { padding: 0 20px 16px; }
-  .community-msg { max-width: 85%; }
+  .community-page {
+    padding: 0 20px 16px;
+  }
+
+  .community-msg {
+    max-width: 85%;
+  }
 }
 
-/* ── Guidelines modal ──────────────────────────────── */
+
 
 .community-modal-overlay {
   position: fixed;
@@ -387,8 +421,12 @@
 }
 
 @keyframes community-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .community-modal {
@@ -403,8 +441,14 @@
 }
 
 @keyframes community-modal-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .community-modal h2 {

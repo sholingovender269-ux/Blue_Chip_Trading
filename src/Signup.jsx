@@ -69,7 +69,7 @@ export default function Signup({ onGoToPayment, onGoToLogin }) {
     const newErrors = {};
     if (!form.firstName.trim()) newErrors.firstName = "First name required";
     if (!form.lastName.trim()) newErrors.lastName = "Last name required";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = "Invalid email";
+    if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(form.email)) newErrors.email = "Invalid email";
 
     const idError = validateSAId(form.idNumber);
     if (idError) newErrors.idNumber = idError;
@@ -88,6 +88,29 @@ export default function Signup({ onGoToPayment, onGoToLogin }) {
       const digitsOnly = value.replace(/\D/g, "").slice(0, 13);
       setForm((prev) => ({ ...prev, idNumber: digitsOnly }));
       if (errors.idNumber) setErrors((prev) => ({ ...prev, idNumber: "" }));
+      return;
+    }
+
+    // Names: letters (incl. accented), spaces, hyphens and apostrophes only
+    if (name === "firstName" || name === "lastName") {
+      const lettersOnly = value.replace(/[^\p{L}\s'’-]/gu, "");
+      setForm((prev) => ({ ...prev, [name]: lettersOnly }));
+      if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+      return;
+    }
+
+    // Email: live feedback while typing if "@" or "." is missing
+    if (name === "email") {
+      setForm((prev) => ({ ...prev, email: value }));
+      let hint = "";
+      if (value) {
+        const domain = value.slice(value.indexOf("@") + 1);
+        if (!value.includes("@")) hint = "Email is missing an @";
+        else if (!domain.includes(".")) hint = "Email is missing a . after the @";
+        else if (domain.startsWith(".") || domain.endsWith(".") || domain.includes(".."))
+          hint = "Email can't end with a . or have an empty part after it";
+      }
+      setErrors((prev) => ({ ...prev, email: hint }));
       return;
     }
 

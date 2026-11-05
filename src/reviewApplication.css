@@ -1,8 +1,4 @@
-/* ============================================================
-   REVIEW APPLICATIONS (admin)
-   Uses the admin/dashboard tokens, with fallbacks so it still
-   looks right if a token isn't defined in admin.css.
-   ============================================================ */
+
 
 .ra-page {
   --ra-card:        var(--bg-card, #0d0f13);
@@ -35,7 +31,7 @@
 
 :root[data-theme="light"] .ra-page { --ra-field: rgba(15, 23, 32, 0.03); }
 
-/* ── Stats ─────────────────────────────────────────────── */
+
 
 .ra-stats {
   display: grid;
@@ -81,7 +77,7 @@
   line-height: 1.1;
 }
 
-/* ── Toolbar ───────────────────────────────────────────── */
+
 
 .ra-toolbar {
   display: flex;
@@ -151,7 +147,7 @@
   box-shadow: 0 0 0 3px var(--ra-up-dim);
 }
 
-/* ── Notices ───────────────────────────────────────────── */
+
 
 .ra-notice {
   font-family: var(--ra-mono);
@@ -175,7 +171,7 @@
   border-color: rgba(255, 77, 106, 0.3);
 }
 
-/* ── List + card ───────────────────────────────────────── */
+
 
 .ra-list { display: flex; flex-direction: column; gap: 12px; }
 
@@ -275,7 +271,7 @@
   border-color: color-mix(in srgb, var(--ra-up) 35%, transparent);
 }
 
-/* ── Tags ──────────────────────────────────────────────── */
+
 
 .ra-tags {
   display: flex;
@@ -307,7 +303,7 @@
   border-color: color-mix(in srgb, var(--ra-purple) 30%, transparent);
 }
 
-/* ── Details ───────────────────────────────────────────── */
+
 
 .ra-details {
   margin-top: 18px;
@@ -361,7 +357,7 @@
 
 .ra-link:hover { border-bottom-color: var(--ra-up); }
 
-/* ── Actions ───────────────────────────────────────────── */
+
 
 .ra-actions {
   display: flex;
@@ -448,7 +444,7 @@
   box-shadow: 0 8px 20px -10px var(--ra-down);
 }
 
-/* ── Responsive ────────────────────────────────────────── */
+
 
 @media (max-width: 800px) {
   .ra-detail-grid { grid-template-columns: 1fr; }
@@ -472,7 +468,7 @@
   .ra-btn.ghost { border-color: var(--ra-border); text-align: center; }
 }
 
-/* ── Mentor credentials modal ──────────────────────────── */
+
 
 .ra-modal-overlay {
   position: fixed;

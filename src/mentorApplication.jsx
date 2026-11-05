@@ -3,8 +3,6 @@ import emailjs from "@emailjs/browser";
 import "./mentorApplication.css";
 import { supabase } from "./supabaseClient";
 
-// ── EmailJS config ───────────────────────────────────────────
-// Service ID + Public Key: EmailJS dashboard → Email Services / Account → General
 const EMAILJS_SERVICE_ID = "service_6e2lrip";
 const EMAILJS_TEMPLATE_ID = "template_y633ecs";
 const EMAILJS_PUBLIC_KEY = "iJf91K9SaKpnpTDzB";
@@ -35,15 +33,7 @@ function toggleInList(list, value) {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-/**
- * Validates a South African ID number (YYMMDDSSSSCAZ).
- * Returns an error string if invalid, or "" if valid.
- *  - 13 digits
- *  - first 6 digits are a real date of birth (not in the future)
- *  - 11th digit (citizenship) is 0 or 1
- *  - 13th digit passes the Luhn checksum
- * The database runs the same checks again before storing anything.
- */
+
 function validateSAId(id) {
   if (!/^\d{13}$/.test(id)) return "ID must be 13 digits";
 
@@ -88,7 +78,6 @@ export default function MentorApplication({ user }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Check if this user already applied
   useEffect(() => {
     let cancelled = false;
     const check = async () => {
@@ -111,7 +100,6 @@ export default function MentorApplication({ user }) {
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  // ID number: digits only, capped at 13
   const handleIdChange = (e) => {
     const digitsOnly = e.target.value.replace(/\D/g, "").slice(0, 13);
     set("id_number", digitsOnly);
@@ -142,7 +130,6 @@ export default function MentorApplication({ user }) {
     return "";
   };
 
-  // Sends the confirmation email. Never blocks the application if it fails.
   const sendConfirmationEmail = async (name, email) => {
     try {
       await emailjs.send(
@@ -178,8 +165,6 @@ export default function MentorApplication({ user }) {
     const name = form.full_name.trim();
     const email = form.email.trim().toLowerCase();
 
-    // The database validates the ID, hashes it (HMAC-SHA256 + secret pepper)
-    // and stores only the hash. The raw ID number is never saved.
     const { error: err } = await supabase.rpc("submit_mentor_application", {
       p_user_id: user?.id ?? null,
       p_full_name: name,
@@ -200,7 +185,6 @@ export default function MentorApplication({ user }) {
 
     if (err) {
       setSubmitting(false);
-      // Never log the form: it contains the ID number.
       console.error("Mentor application error:", err.message);
       const msg = err.message || "";
       if (msg.includes("duplicate_id_number")) {
@@ -213,16 +197,13 @@ export default function MentorApplication({ user }) {
       return;
     }
 
-    // Application saved → send the confirmation email
     await sendConfirmationEmail(name, email);
 
-    // Don't keep the ID number in memory once it has been submitted
     set("id_number", "");
     setSubmitting(false);
     setView("done");
   };
 
-  // ── Intro ──
   if (view === "intro") {
     return (
       <div className="mentor-page-wrap">
@@ -247,7 +228,6 @@ export default function MentorApplication({ user }) {
     );
   }
 
-  // ── Already applied ──
   if (view === "existing" && existing) {
     return (
       <div className="mentor-page-wrap">
@@ -265,7 +245,6 @@ export default function MentorApplication({ user }) {
     );
   }
 
-  // ── Success ──
   if (view === "done") {
     return (
       <div className="mentor-page-wrap">
@@ -282,7 +261,6 @@ export default function MentorApplication({ user }) {
     );
   }
 
-  // ── Form ──
   return (
     <div className="mentor-page-wrap">
       <form className="dashboard-card mentor-card" onSubmit={handleSubmit} noValidate>

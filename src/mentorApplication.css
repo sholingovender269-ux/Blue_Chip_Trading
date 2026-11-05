@@ -1,9 +1,4 @@
-/* ============================================================
-   MENTOR APPLICATION
-   Uses the dashboard design tokens (landing.css), so dark/light
-   theme works automatically. Accent = brand green (--up).
-   To change the accent colour, edit --mentor-accent below.
-   ============================================================ */
+
 
 .mentor-page-wrap {
   --mentor-accent:        var(--up);
@@ -23,7 +18,7 @@
   --mentor-field-bg: rgba(15, 23, 32, 0.03);
 }
 
-/* ── Card ─────────────────────────────────────────────── */
+
 
 .mentor-card {
   --card-accent: var(--mentor-accent);
@@ -33,7 +28,7 @@
   box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.6);
 }
 
-/* top accent line + soft glow, same language as the stat cards */
+
 .mentor-card::before {
   content: "";
   position: absolute;
@@ -60,7 +55,7 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* ── Intro ────────────────────────────────────────────── */
+
 
 .mentor-intro .card-header {
   border-bottom: none;
@@ -129,7 +124,7 @@
   transform: translateX(3px);
 }
 
-/* ── Form layout ──────────────────────────────────────── */
+
 
 .mentor-grid {
   display: grid;
@@ -157,7 +152,7 @@
   font-family: var(--font-mono);
 }
 
-/* "(7/13)" counter next to the ID number label */
+
 .mentor-label-count {
   margin-left: 8px;
   letter-spacing: 0.5px;
@@ -165,7 +160,7 @@
   opacity: 0.8;
 }
 
-/* ── Inputs ───────────────────────────────────────────── */
+
 
 .mentor-input {
   width: 100%;
@@ -190,7 +185,7 @@
   box-shadow: 0 0 0 3px var(--mentor-accent-dim);
 }
 
-/* invalid state (ID number) */
+
 .mentor-input.invalid,
 .mentor-input.invalid:hover {
   border-color: rgba(255, 77, 106, 0.55);
@@ -210,7 +205,7 @@
   letter-spacing: 0.2px;
 }
 
-/* privacy note under the ID number */
+
 .mentor-secure {
   display: flex;
   align-items: flex-start;
@@ -252,7 +247,7 @@ select.mentor-input option {
   font-family: var(--font-mono);
 }
 
-/* ── Chips ────────────────────────────────────────────── */
+
 
 .mentor-chips {
   display: flex;
@@ -287,7 +282,7 @@ select.mentor-input option {
   box-shadow: 0 0 14px color-mix(in srgb, var(--mentor-accent) 18%, transparent);
 }
 
-/* ── Checkbox ─────────────────────────────────────────── */
+
 
 .mentor-check {
   display: flex;
@@ -313,7 +308,7 @@ select.mentor-input option {
   cursor: pointer;
 }
 
-/* ── Error ────────────────────────────────────────────── */
+
 
 .mentor-error {
   background: var(--down-dim);
@@ -329,7 +324,7 @@ select.mentor-input option {
   margin-bottom: 20px;
 }
 
-/* ── Buttons ──────────────────────────────────────────── */
+
 
 .mentor-actions {
   display: flex;
@@ -359,7 +354,7 @@ select.mentor-input option {
   background: var(--mentor-field-bg);
 }
 
-/* solid green — matches the Sign Up / Apply Now buttons on the homepage */
+
 .mentor-btn.primary {
   background: var(--mentor-accent);
   border-color: var(--mentor-accent);
@@ -385,7 +380,7 @@ select.mentor-input option {
   transform: none;
 }
 
-/* ── Status pill ──────────────────────────────────────── */
+
 
 .mentor-status {
   display: inline-block;
@@ -403,7 +398,7 @@ select.mentor-input option {
 .mentor-status.approved { color: var(--up);     background: var(--up-dim);     border-color: var(--mentor-accent-border); }
 .mentor-status.rejected { color: var(--down);   background: var(--down-dim);   border-color: rgba(255, 77, 106, 0.3); }
 
-/* ── Success ──────────────────────────────────────────── */
+
 
 .mentor-success {
   text-align: center;
@@ -439,7 +434,7 @@ select.mentor-input option {
   justify-content: center;
 }
 
-/* ── Responsive ───────────────────────────────────────── */
+
 
 @media (max-width: 1280px) {
   .mentor-page-wrap { padding-left: 32px; padding-right: 32px; }

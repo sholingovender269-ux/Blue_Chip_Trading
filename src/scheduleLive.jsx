@@ -5,8 +5,6 @@ import './live.css';
 const pad = (n) => String(n).padStart(2, '0');
 const toDateInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-// `mentor` is the logged-in mentor from your own login (must have an `id`
-// that matches mentors.id).
 export default function ScheduleLive({ mentor }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -41,7 +39,6 @@ export default function ScheduleLive({ mentor }) {
     loadMine();
   }, [loadMine]);
 
-  // Only mentors can see or use this form
   if (!mentorId) {
     return (
       <div className="live-card schedule-card">
@@ -127,7 +124,6 @@ export default function ScheduleLive({ mentor }) {
     }
   };
 
-  // Hard delete. .select() lets us detect a blocked delete (0 rows, no error).
   const deleteSession = async (id) => {
     if (!window.confirm('Delete this scheduled live?')) return;
     setFormError('');

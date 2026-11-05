@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./adminCommunity.css";
 import { supabase } from "./supabaseClient";
 
-// ── Helpers ─────────────────────────────────────────────────────
 
 function formatDateTime(iso) {
   if (!iso) return "—";
@@ -23,7 +22,6 @@ const SORT_OPTIONS = [
   { value: "user_name_desc", label: "User Name (Z → A)" },
 ];
 
-// ── Main page ───────────────────────────────────────────────────
 
 export default function AdminCommunityPage() {
   const [messages, setMessages] = useState([]);

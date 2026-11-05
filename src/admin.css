@@ -71,7 +71,7 @@
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
 }
 
-/* ── Nav (same pattern as landing dashboard-nav) ─────────────── */
+/*Nav */
 
 .admin-nav {
   display: flex;
@@ -182,7 +182,7 @@
   background: var(--down-dim);
 }
 
-/* ── Welcome banner ───────────────────────────────────────────── */
+/* Welcome banner*/
 
 .admin-welcome-banner {
   display: flex;
@@ -500,6 +500,8 @@
   margin-bottom: 16px;
 }
 
+.admin-note-banner strong { color: var(--text-bright); }
+
 /* ── Error banner ─────────────────────────────────────────────── */
 
 .admin-error-banner {
@@ -513,11 +515,12 @@
   margin-bottom: 16px;
 }
 
-/* ── Inline add form (Clients page) ──────────────────────────────── */
+/* ── Inline add form (Clients / Admins pages) ────────────────────── */
 
 .admin-inline-form {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 10px;
   margin-bottom: 20px;
   padding: 16px;
@@ -527,6 +530,46 @@
 }
 
 .admin-inline-form .admin-search { flex: 1; min-width: 160px; }
+
+/* Field wrapper (input + hint/error underneath), used by the password field */
+.admin-inline-form .admin-field {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-inline-form .admin-field .admin-search {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-field-hint {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.admin-field-hint.error { color: var(--down); }
+
+.admin-search.admin-input-invalid,
+.admin-search.admin-input-invalid:focus {
+  border-color: rgba(255, 77, 106, 0.55);
+}
+
+/* Shown instead of the password field when the email already has a client account */
+.admin-field-info {
+  background: var(--purple-dim);
+  border: 1px solid var(--purple-border);
+  color: var(--text-mid);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 9px 14px;
+  border-radius: 8px;
+}
 
 /* ── Users table ──────────────────────────────────────────────── */
 

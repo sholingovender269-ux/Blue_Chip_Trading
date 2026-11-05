@@ -213,7 +213,6 @@ function TradingViewChart({ symbol, interval }) {
   );
 }
 
-// ── Theme (light/dark) ────────────────────────────────────────
 const THEME_STORAGE_KEY = "bluechip-theme";
 
 function useTheme() {
@@ -230,7 +229,6 @@ function useTheme() {
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     } catch {
-      // ignore storage errors (private browsing etc.)
     }
   }, [theme]);
 
@@ -307,7 +305,6 @@ export default function Landing({ user, onLogout, onUserUpdate }) {
   const [rawQuotes, setRawQuotes] = useState({});
   const [activeNavItem, setActiveNavItem] = useState("dashboard");
 
-  // Opens the mentor application page (called by "Apply Now" buttons in child pages)
   const openMentorApplication = () => setActiveNavItem("mentor");
 
   const [dashboardStats, setDashboardStats] = useState({
@@ -765,10 +762,6 @@ export default function Landing({ user, onLogout, onUserUpdate }) {
               <span className="account-value">{user?.email || "—"}</span>
             </div>
             <div className="account-row">
-              <span className="account-label">ID Number</span>
-              <span className="account-value">{user?.idNumber || "—"}</span>
-            </div>
-            <div className="account-row">
               <span className="account-label">Plan</span>
               <span className="account-value plan">All In Access</span>
             </div>
@@ -784,7 +777,7 @@ export default function Landing({ user, onLogout, onUserUpdate }) {
         <p>© 2026 Blue Chip Trading. All rights reserved.</p>
       </footer>
 
-      {/* AI Assistant - floats over everything */}
+      {}
       <AIAssistant user={user} activeSymbol={activeSymbol} />
     </div>
   );

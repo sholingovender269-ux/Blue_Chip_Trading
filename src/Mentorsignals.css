@@ -70,7 +70,7 @@
     color: var(--dim);
 }
 
-/* BUY / SELL toggle */
+
 
 .direction-toggle {
     display: flex;
@@ -107,7 +107,7 @@
     border-color: var(--red-border);
 }
 
-/* Post button */
+
 
 .post-button {
     padding: 13px 22px;
@@ -132,7 +132,7 @@
     cursor: default;
 }
 
-/* Filter tabs */
+
 
 .filter-tabs {
     display: flex;
@@ -162,7 +162,7 @@
     border-color: var(--purple-border);
 }
 
-/* Table extras */
+
 
 .students-card .signals-table td.num {
     font-family: var(--mono);
@@ -231,9 +231,7 @@
 }
 
 
-/* =========================
-   SIGNAL FEED TABLE LAYOUT
-========================= */
+
 
 .students-card .signals-table {
     min-width: 1180px;
@@ -262,7 +260,7 @@
     text-transform: capitalize;
 }
 
-/* Rationale: fixed width, clamped to 2 lines, full text on hover */
+
 
 .students-card .signals-table th:nth-last-child(2),
 .students-card .signals-table td.rationale-cell {

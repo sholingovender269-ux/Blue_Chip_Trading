@@ -29,7 +29,6 @@ function LiveStage() {
   const isLive = Boolean(broadcaster);
   const chatRoom = `main-room-${broadcaster?.sid || 'live'}`;
 
-  // OFFLINE: offline card on the left, upcoming lives on the right
   if (!isLive) {
     return (
       <div className="live-split">
@@ -47,7 +46,6 @@ function LiveStage() {
     );
   }
 
-  // LIVE: schedule is hidden
   return (
     <div className="live-layout">
       <div className="live-card">

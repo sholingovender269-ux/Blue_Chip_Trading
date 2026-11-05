@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation, Trans } from "react-i18next";
-import LanguageSwitcher from "./Lgswitcher";
 import "./homepage.css";
 
 const MODULES = [
@@ -13,8 +12,16 @@ const MODULES = [
   { label: "REWARDS_ENGINE", status: "ACTIVE", tone: "primary" },
 ];
 
+const PRICING_FEATURES = [
+  "Every professional course, unlocked",
+  "Live trading sessions with mentors",
+  "Verified daily signals",
+  "Full community access",
+  "Simulated trading environment",
+  "Daily market analysis",
+];
+
 function useCounter(target, duration = 1800) {
-  // Values with no digits (e.g. "Live") are shown as-is, with no count-up.
   const hasNumber = /\d/.test(target);
   const suffix = target.replace(/[0-9.,]/g, "");
   const [display, setDisplay] = useState(hasNumber ? `0${suffix}` : target);
@@ -78,8 +85,7 @@ function FAQItem({ question, answer, isOpen, onClick }) {
   );
 }
 
-/* Lightweight 3D tilt-on-hover (visual only). Tracks the mouse and sets
-   CSS vars that .term-frame--tilt uses to rotate/glow toward the cursor. */
+
 function useTilt() {
   const ref = useRef(null);
 
@@ -185,20 +191,17 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
     if (onSignupClick) onSignupClick();
   };
 
-  // Opens the mentor application page (nav "Become a Mentor" + career "Apply Now")
   const handleMentor = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (onMentorClick) onMentorClick();
   };
 
-  // Opens the admin sign-in page (nav button)
   const handleAdmin = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (onAdminClick) onAdminClick();
   };
 
-  /* Cursor-follow spotlight glow across the whole page.
-     Purely decorative: sets CSS vars consumed by .bg-cursor-glow. */
+  
   const pageRef = useRef(null);
   useEffect(() => {
     const handlePointerMove = (e) => {
@@ -215,7 +218,6 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
   const stepItems = t("steps.items", { returnObjects: true });
   const faqItems = t("faq.items", { returnObjects: true });
   const pillars = t("team.pillars", { returnObjects: true });
-  const features = t("pricing.features", { returnObjects: true });
 
   return (
     <div className="page" ref={pageRef}>
@@ -231,20 +233,10 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
         <div className="logo">
           Blue <span>Chip</span> Trading
         </div>
-        <div className="nav-links">
-          <a href="#">{t("nav.courses")}</a>
-          <a href="#">{t("nav.mentorship")}</a>
-          <a href="#">{t("nav.signals")}</a>
-          <a href="#">{t("nav.pricing")}</a>
-        </div>
         <div className="nav-right">
-          <a href="#admin" className="nav-admin" onClick={handleAdmin}>
-            🔒 Admin
-          </a>
           <a href="#" className="nav-careers" onClick={handleMentor}>
             {t("nav.becomeMentor")}
           </a>
-          <LanguageSwitcher />
           <a
             href="#"
             className="nav-login"
@@ -257,6 +249,10 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
           </a>
           <a href="#" className="nav-signup" onClick={handleSignup}>
             {t("nav.signup")}
+          </a>
+          <span className="nav-divider" aria-hidden="true" />
+          <a href="#admin" className="nav-admin" onClick={handleAdmin} title="Admin Login">
+            🔒 Admin
           </a>
         </div>
       </nav>
@@ -317,7 +313,11 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
       <section className="section team-section">
         <div className="team-container">
           <div className="team-image-side">
-            <img src="/team-member.jpg" alt="Founders" className="team-main-img" />
+            <img
+                src={`${import.meta.env.BASE_URL}team.jpeg`}
+                 alt="Founders"
+                className="team-main-img"
+            />
             <div className="team-img-accent"></div>
           </div>
           <div className="team-text-side">
@@ -371,17 +371,22 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
         <h2 className="h2 center">{t("pricing.title")}</h2>
         <div className="pricing-card">
           <div className="pricing-name">{t("pricing.name")}</div>
-          <div className="pricing-price">
-            R420<span>{t("pricing.period")}</span>
-          </div>
+          <div className="pricing-price">R420</div>
           <ul className="pricing-features">
-            {features.map((f, i) => (
+            {PRICING_FEATURES.map((f, i) => (
               <li key={i}>✓ {f}</li>
             ))}
           </ul>
           <button className="pricing-btn" onClick={handleSignup}>
             {t("pricing.cta")}
           </button>
+          <p className="pricing-secure">
+            🔒{" "}
+            {t("pricing.secure", {
+              defaultValue:
+                "Card payments are secure and handled by Stripe. Visa, Mastercard, Apple Pay and Link accepted.",
+            })}
+          </p>
         </div>
       </section>
 
@@ -414,10 +419,6 @@ export default function Academy({ onLoginClick, onSignupClick, onMentorClick, on
           </button>
         </div>
         <div className="career-stats">
-          <div className="career-stat">
-            <div className="career-stat-value">R20K+</div>
-            <div className="career-stat-label">{t("career.earnings")}</div>
-          </div>
           <div className="career-stat">
             <div className="career-stat-value">100%</div>
             <div className="career-stat-label">{t("career.remote")}</div>

@@ -23,7 +23,6 @@ export default function ForgotPasswordPage({ initialRole = "client", onBack }) {
         body: { email: email.trim(), role },
       });
       if (fnError) throw fnError;
-      // Same message whether or not the account exists (prevents email enumeration)
       setSuccess("If that email is registered, a reset link has been sent. Check your inbox.");
     } catch (err) {
       console.error(err);

@@ -96,13 +96,13 @@
   object-fit: cover;
 }
 
-/* Shared screens must never be cropped */
+
 .live-video.contain {
   object-fit: contain;
   background: #000;
 }
 
-/* Camera in the corner while the screen is shared */
+
 .live-pip {
   position: absolute;
   right: 12px;
@@ -151,7 +151,7 @@
   border-color: var(--border-hover);
 }
 
-/* Screen share is on */
+
 .live-btn.sharing {
   color: var(--up);
   background: var(--up-dim);
@@ -207,7 +207,7 @@
   .live-btn.end { margin-left: 0; }
   .live-pip { width: 32%; min-width: 90px; }
 }
-/* ---------- Side-by-side layout (offline) ---------- */
+
 .live-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -221,7 +221,7 @@
   max-width: 100%;
 }
 
-/* ---------- Schedule live ---------- */
+
 .schedule-heading {
   font-family: var(--font-display);
   font-size: 1.2rem;

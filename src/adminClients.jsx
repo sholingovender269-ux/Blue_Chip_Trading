@@ -5,13 +5,21 @@ import { supabase } from "./supabaseClient";
 const EMPTY_CLIENT = { first_name: "", last_name: "", email: "", id_number: "", address: "" };
 const EMPTY_ADMIN = { name: "", surname: "", email: "", password: "" };
 
+const CLIENT_COLUMNS = "id, first_name, last_name, email, address, created_at";
+
 function formatDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleDateString("en-ZA", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-// ── Clients tab ─────────────────────────────────────────────────
+function validatePassword(pw) {
+  if (!pw) return "A temporary password is required for a new login.";
+  if (pw.length < 8) return "Password must be at least 8 characters.";
+  if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return "Password must include a letter and a number.";
+  return null;
+}
+
 
 function ClientsTab() {
   const [clients, setClients] = useState([]);
@@ -28,7 +36,7 @@ function ClientsTab() {
     setError(null);
     const { data, error } = await supabase
       .from("clients")
-      .select("*")
+      .select(CLIENT_COLUMNS)
       .order("created_at", { ascending: false });
 
     if (error) setError(error.message);
@@ -61,7 +69,7 @@ function ClientsTab() {
     const { data, error } = await supabase
       .from("clients")
       .insert([newClient])
-      .select();
+      .select(CLIENT_COLUMNS);
 
     if (error) setError(error.message);
     else {
@@ -149,7 +157,6 @@ function ClientsTab() {
             <tr>
               <th>Name</th>
               <th>Email</th>
-              <th>ID Number</th>
               <th>Address</th>
               <th>Joined</th>
               <th>Actions</th>
@@ -157,13 +164,12 @@ function ClientsTab() {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={6} className="empty-row">Loading clients…</td></tr>
+              <tr><td colSpan={5} className="empty-row">Loading clients…</td></tr>
             )}
             {!loading && filtered.map((c) => (
               <tr key={c.id}>
                 <td>{c.first_name} {c.last_name}</td>
                 <td className="mono">{c.email}</td>
-                <td className="mono">{c.id_number}</td>
                 <td>{c.address || "—"}</td>
                 <td className="mono">{formatDate(c.created_at)}</td>
                 <td className="row-actions">
@@ -178,7 +184,7 @@ function ClientsTab() {
               </tr>
             ))}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={6} className="empty-row">No clients found.</td></tr>
+              <tr><td colSpan={5} className="empty-row">No clients found.</td></tr>
             )}
           </tbody>
         </table>
@@ -187,23 +193,19 @@ function ClientsTab() {
   );
 }
 
-// ── Admins tab (public.admins) ───────────────────────────────────
-// NOTE: admins.id is a foreign key to auth.users(id) — a row can only be
-// inserted here for a UUID that already exists as an authenticated user.
-// This form does NOT create the auth user itself (that requires the
-// service-role key / an Edge Function, never the anon key on the client).
-// Typical flow: the person signs up / is invited via Supabase Auth first,
-// you copy their auth user UUID, then promote them to admin here.
 
 function AdminsTab() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [newAdmin, setNewAdmin] = useState(EMPTY_ADMIN);
+  const [triedSubmit, setTriedSubmit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [clientEmails, setClientEmails] = useState(() => new Set());
 
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
@@ -218,9 +220,15 @@ function AdminsTab() {
     setLoading(false);
   }, []);
 
+  const loadClientEmails = useCallback(async () => {
+    const { data } = await supabase.from("clients").select("email");
+    setClientEmails(new Set((data || []).map((c) => (c.email || "").toLowerCase())));
+  }, []);
+
   useEffect(() => {
     fetchAdmins();
-  }, [fetchAdmins]);
+    loadClientEmails();
+  }, [fetchAdmins, loadClientEmails]);
 
   const filtered = admins.filter((a) => {
     if (!search.trim()) return true;
@@ -232,34 +240,63 @@ function AdminsTab() {
     );
   });
 
+  const typedEmail = newAdmin.email.trim().toLowerCase();
+  const isExistingClient = typedEmail !== "" && clientEmails.has(typedEmail);
+  const passwordError = isExistingClient ? null : validatePassword(newAdmin.password);
+  const showPasswordError = Boolean(passwordError) && (triedSubmit || newAdmin.password !== "");
+
+  const toggleForm = () => {
+    if (!showForm) loadClientEmails();
+    setShowForm((s) => !s);
+    setTriedSubmit(false);
+    setNewAdmin(EMPTY_ADMIN);
+  };
+
   const handleAddAdmin = async (e) => {
     e.preventDefault();
-    if (!newAdmin.name || !newAdmin.surname || !newAdmin.email || !newAdmin.password) {
-      setError("Name, surname, email, and a temporary password are all required.");
+    setTriedSubmit(true);
+
+    if (!newAdmin.name.trim() || !newAdmin.surname.trim() || !typedEmail) {
+      setError("Name, surname, and email are required.");
       return;
     }
+    if (passwordError) {
+      setError(null);
+      return; // the message is shown under the password field
+    }
+
     setSaving(true);
     setError(null);
+    setNotice(null);
 
-    // Calls the "create-admin" Edge Function, which creates the auth user
-    // AND the admins row together using the service-role key server-side.
-    // The function itself checks that the caller is already an admin.
     const { data, error } = await supabase.functions.invoke("create-admin", {
       body: {
-        email: newAdmin.email,
-        password: newAdmin.password,
-        name: newAdmin.name,
-        surname: newAdmin.surname,
+        email: typedEmail,
+        password: isExistingClient ? "" : newAdmin.password,
+        name: newAdmin.name.trim(),
+        surname: newAdmin.surname.trim(),
       },
     });
 
     if (error) {
-      setError(error.message || "Failed to create admin.");
+      let msg = error.message || "Failed to create admin.";
+      try {
+        const body = await error.context.json();
+        msg = body?.error || body?.message || msg;
+      } catch {
+      }
+      setError(msg);
     } else if (data?.error) {
       setError(data.error);
     } else {
       setAdmins((prev) => [data.admin, ...prev]);
+      setNotice(
+        data.reusedExistingLogin
+          ? `${data.admin.email} already has an account, so they were made an admin. They must sign in with their own existing password.`
+          : `${data.admin.email} was created as an admin. Share the temporary password with them.`
+      );
       setNewAdmin(EMPTY_ADMIN);
+      setTriedSubmit(false);
       setShowForm(false);
     }
     setSaving(false);
@@ -268,6 +305,7 @@ function AdminsTab() {
   const handleDelete = async (id) => {
     setDeletingId(id);
     setError(null);
+    setNotice(null);
     const { error } = await supabase.from("admins").delete().eq("id", id);
     if (error) setError(error.message);
     else setAdmins((prev) => prev.filter((a) => a.id !== id));
@@ -282,11 +320,13 @@ function AdminsTab() {
       </div>
 
       {error && <div className="admin-error-banner">{error}</div>}
+      {notice && <div className="admin-note-banner">{notice}</div>}
 
       <div className="admin-note-banner">
-        This creates a brand-new login and grants admin access in one step.
-        Share the temporary password with them and have them change it after
-        their first sign-in.
+        <strong>Note:</strong> if the person already has a client account, no password is needed.
+        They must sign in with their own existing password. If the email is new, set a temporary
+        password (at least 8 characters, with a letter and a number), share it with them, and ask
+        them to change it after their first sign-in.
       </div>
 
       <div className="table-toolbar">
@@ -297,14 +337,14 @@ function AdminsTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="admin-btn primary" onClick={() => setShowForm((s) => !s)}>
+        <button className="admin-btn primary" onClick={toggleForm}>
           {showForm ? "Cancel" : "+ New Admin"}
         </button>
         <button className="admin-btn ghost" onClick={fetchAdmins}>Refresh</button>
       </div>
 
       {showForm && (
-        <form className="admin-inline-form" onSubmit={handleAddAdmin}>
+        <form className="admin-inline-form" onSubmit={handleAddAdmin} noValidate>
           <input
             className="admin-search"
             placeholder="Name"
@@ -324,13 +364,32 @@ function AdminsTab() {
             value={newAdmin.email}
             onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
           />
-          <input
-            className="admin-search"
-            placeholder="Temporary password"
-            type="password"
-            value={newAdmin.password}
-            onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
-          />
+
+          {isExistingClient ? (
+            <div className="admin-field">
+              <div className="admin-field-info">
+                This person already has a client account. They will sign in with their own
+                existing password.
+              </div>
+            </div>
+          ) : (
+            <div className="admin-field">
+              <input
+                className={`admin-search ${showPasswordError ? "admin-input-invalid" : ""}`}
+                placeholder="Temporary password"
+                type="password"
+                autoComplete="new-password"
+                value={newAdmin.password}
+                onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+              />
+              <span className={`admin-field-hint ${showPasswordError ? "error" : ""}`}>
+                {showPasswordError
+                  ? passwordError
+                  : "At least 8 characters, with a letter and a number."}
+              </span>
+            </div>
+          )}
+
           <button className="admin-btn primary" type="submit" disabled={saving}>
             {saving ? "Creating…" : "Create Admin"}
           </button>
@@ -379,7 +438,6 @@ function AdminsTab() {
   );
 }
 
-// ── Page shell with tabs ──────────────────────────────────────────
 
 export default function ClientsPage() {
   const [tab, setTab] = useState("clients");

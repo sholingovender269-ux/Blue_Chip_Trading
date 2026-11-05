@@ -9,8 +9,6 @@ import GoLive from "./glive.jsx";
 import MentorProfile from "./mentorProfile.jsx";
 import MentorReset from "./mReset.jsx";
 
-// Mentor portal. The top navbar stays on screen and swaps the page below it.
-// Connected: My Students, Signals, Courses, Community, Go Live, Profile, Reset Password.
 
 const NAV = [
     { key: "dashboard", label: "Dashboard" },
@@ -31,18 +29,14 @@ const CARDS = [
     { key: "profile", icon: "👤", title: "My Profile", text: "Update your photo, bio, trading style and experience." },
 ];
 
-// True only until the user changes the auto-generated password once.
 const needsReset = (u) =>
     !!(u?.must_change_password ?? u?.mustChangePassword ?? u?.first_login ?? u?.firstLogin);
 
 export default function MentorPortal({ user, onLogout }) {
-    // Local copy so profile edits show up straight away (name, photo).
     const [currentUser, setCurrentUser] = useState(user);
     const forced = needsReset(currentUser);
     const [pageState, setPage] = useState("dashboard");
-    // Remembers a photo URL that failed to load, so the initials show instead.
     const [brokenUrl, setBrokenUrl] = useState("");
-    // While the first-login reset is pending, the reset page is the only page.
     const page = forced ? "mentorReset" : pageState;
 
     const go = (key) => (e) => {
@@ -73,7 +67,7 @@ export default function MentorPortal({ user, onLogout }) {
 
     return (
         <>
-            {/* NAVBAR */}
+            {}
             <nav className="navbar">
                 <a href="#" className="logo" onClick={go("dashboard")} style={{ textDecoration: "none" }}>
                     Blue Chip <span>Trading</span>
@@ -97,7 +91,7 @@ export default function MentorPortal({ user, onLogout }) {
                         Go Live
                     </a>
 
-                    {/* PROFILE PHOTO (small round icon, opens My Profile) */}
+                    {}
                     <a
                         href="#"
                         onClick={go("profile")}
@@ -128,7 +122,7 @@ export default function MentorPortal({ user, onLogout }) {
                 </div>
             </nav>
 
-            {/* DASHBOARD */}
+            {}
             {page === "dashboard" && (
                 <main className="main">
                     <section className="welcome">
@@ -167,7 +161,7 @@ export default function MentorPortal({ user, onLogout }) {
                 </main>
             )}
 
-            {/* CONNECTED PAGES (each one renders under the same top navbar) */}
+            {}
             {page === "students" && <MyStudents onNavigate={setPage} />}
             {page === "signals" && <MentorSignals onNavigate={setPage} user={currentUser} />}
             {page === "courses" && <MentorCourses onNavigate={setPage} user={currentUser} />}
@@ -177,8 +171,6 @@ export default function MentorPortal({ user, onLogout }) {
                 <MentorReset user={currentUser} forced={forced} onDone={handlePasswordChanged} />
             )}
             {page === "community" && (
-                // Same community.jsx the clients use. The wrapper gives it the
-                // screen height that is left under the 72px navbar.
                 <div style={{ display: "flex", flexDirection: "column", height: "calc(100dvh - 72px)" }}>
                     <Community user={currentUser} />
                 </div>

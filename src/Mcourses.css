@@ -1,11 +1,6 @@
-/* =========================================
-   BLUE CHIP TRADING
-   MENTOR COURSES PAGE
-========================================= */
 
-/* =========================================
-   PAGE HEADER
-========================================= */
+
+
 
 .courses-header {
     text-align: center;
@@ -60,9 +55,7 @@
 }
 
 
-/* =========================================
-   TOP ADD BUTTON
-========================================= */
+
 
 .add-course-button {
     margin-top: 25px;
@@ -93,9 +86,7 @@
 }
 
 
-/* =========================================
-   STATISTICS
-========================================= */
+
 
 .course-stats {
     max-width: 1157px;
@@ -148,9 +139,7 @@
 }
 
 
-/* =========================================
-   MAIN COURSE CONTAINER
-========================================= */
+
 
 .courses-container {
     max-width: 1157px;
@@ -167,9 +156,7 @@
 }
 
 
-/* =========================================
-   COURSE SIDEBAR
-========================================= */
+
 
 .courses-sidebar {
     height: fit-content;
@@ -202,7 +189,7 @@
 }
 
 
-/* Course item */
+
 
 .course-option {
     min-height: 80px;
@@ -259,9 +246,7 @@
 }
 
 
-/* =========================================
-   MAIN COURSE AREA
-========================================= */
+
 
 .course-main {
     min-width: 0;
@@ -276,7 +261,7 @@
 }
 
 
-/* Course title */
+
 
 .course-title-section {
     display: flex;
@@ -331,9 +316,7 @@
 }
 
 
-/* =========================================
-   SECTION HEADERS
-========================================= */
+
 
 .content-section,
 .progress-section {
@@ -399,9 +382,7 @@
 }
 
 
-/* =========================================
-   LESSON CARDS
-========================================= */
+
 
 .lesson-card {
     display: flex;
@@ -526,9 +507,7 @@
 }
 
 
-/* =========================================
-   STUDENT PROGRESS
-========================================= */
+
 
 .student-table {
     overflow: hidden;
@@ -591,7 +570,7 @@
 }
 
 
-/* Student */
+
 
 .student-name {
     display: flex;
@@ -642,9 +621,7 @@
 }
 
 
-/* =========================================
-   PROGRESS BAR
-========================================= */
+
 
 .progress-area {
     display: flex;
@@ -690,7 +667,7 @@
 }
 
 
-/* View button */
+
 
 .view-student-button {
     padding: 6px 10px;
@@ -717,9 +694,7 @@
 }
 
 
-/* =========================================
-   MODALS
-========================================= */
+
 
 .modal-background {
     position: fixed;
@@ -817,7 +792,7 @@
     border-color: #65418b;
 }
 
-/* All / Mine toggle in the sidebar */
+
 .scope-toggle {
     display: flex;
     gap: 6px;
@@ -842,7 +817,7 @@
     border-color: #55327e;
 }
 
-/* Note shown on courses a mentor can read but not edit */
+
 .readonly-note {
     margin: 16px 0 0;
     color: #8c6bb7;
@@ -906,9 +881,7 @@
 }
 
 
-/* =========================================
-   RESPONSIVE
-========================================= */
+
 
 @media (max-width: 1100px) {
 

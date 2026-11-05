@@ -9,9 +9,6 @@ function MyStudents({ onNavigate }) {
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
 
-    // =========================
-    // GET STUDENTS
-    // =========================
 
     useEffect(() => {
         fetchStudents();
@@ -47,9 +44,6 @@ function MyStudents({ onNavigate }) {
     };
 
 
-    // =========================
-    // MASK ID NUMBER (hide last 5 digits)
-    // =========================
 
     const maskId = (id) => {
         if (!id) return "—";
@@ -59,9 +53,6 @@ function MyStudents({ onNavigate }) {
     };
 
 
-    // =========================
-    // SEARCH STUDENTS
-    // =========================
 
     const filteredStudents = students.filter((student) => {
 
@@ -76,9 +67,6 @@ function MyStudents({ onNavigate }) {
     });
 
 
-    // =========================
-    // DELETE STUDENT
-    // =========================
 
     const deleteStudent = async (id) => {
 
@@ -90,7 +78,6 @@ function MyStudents({ onNavigate }) {
             return;
         }
 
-        // Works whether your primary key column is "id" or "client_no"
         const student = students.find((s) => s.id === id);
         const keyColumn = student?._key ?? "id";
         const { error } = await supabase
@@ -149,9 +136,7 @@ function MyStudents({ onNavigate }) {
                 </div>
 
 
-                {/* =========================
-                    SEARCH
-                ========================= */}
+                {}
 
                 <div className="student-toolbar">
 
@@ -169,9 +154,7 @@ function MyStudents({ onNavigate }) {
                 </div>
 
 
-                {/* =========================
-                    ERROR
-                ========================= */}
+                {}
 
                 {error && (
                     <div className="error-message">
@@ -180,9 +163,7 @@ function MyStudents({ onNavigate }) {
                 )}
 
 
-                {/* =========================
-                    STUDENT TABLE
-                ========================= */}
+                {}
 
                 <div className="students-card">
 
@@ -242,7 +223,7 @@ function MyStudents({ onNavigate }) {
 
                             <tbody>
 
-                                {/* LOADING */}
+                                {}
 
                                 {loading && (
 
@@ -260,7 +241,7 @@ function MyStudents({ onNavigate }) {
                                 )}
 
 
-                                {/* STUDENTS */}
+                                {}
 
                                 {!loading &&
                                     filteredStudents.map((student) => (
@@ -324,7 +305,7 @@ function MyStudents({ onNavigate }) {
                                 }
 
 
-                                {/* NO STUDENTS */}
+                                {}
 
                                 {!loading &&
                                     filteredStudents.length === 0 && (

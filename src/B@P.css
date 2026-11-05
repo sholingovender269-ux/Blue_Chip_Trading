@@ -17,7 +17,7 @@
   min-height: 100vh;
 }
 
-/* NAV */
+
 .broker-cards-page nav {
   display: flex;
   align-items: center;
@@ -77,7 +77,7 @@
 }
 .broker-cards-page .btn-teal:hover { background: var(--teal-dark); }
 
-/* HERO */
+
 .broker-cards-page .hero {
   padding: 5rem 2.5rem 4rem;
   max-width: 1100px;
@@ -147,7 +147,7 @@
   text-align: center;
 }
 
-/* STATS BAR */
+
 .broker-cards-page .stats-bar {
   background: var(--bg-2);
   border-top: 1px solid var(--border);
@@ -180,7 +180,7 @@
   color: var(--text-muted);
 }
 
-/* MAIN CONTENT */
+
 .broker-cards-page .content {
   max-width: 1100px;
   margin: 0 auto;
@@ -218,7 +218,7 @@
   background: var(--border);
 }
 
-/* CARD GRID */
+
 .broker-cards-page .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

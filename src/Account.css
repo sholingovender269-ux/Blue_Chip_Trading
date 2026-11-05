@@ -206,7 +206,7 @@
   border-radius: 999px;
 }
 
-/* ── Danger card (delete account) ── */
+/* delete account */
 
 .account-card-danger {
   border-color: var(--danger-border);
@@ -329,7 +329,7 @@
   align-self: flex-end;
 }
 
-/* ── Buttons ── */
+/*  Buttons */
 
 .account-btn {
   align-self: flex-start;
@@ -381,7 +381,7 @@
   color: var(--mint);
 }
 
-/* Outlined danger button (opens the modal) */
+/* Outlined danger button */
 .account-btn-danger {
   background: var(--danger-dim);
   border: 1px solid var(--danger-border);
@@ -480,7 +480,7 @@
   align-self: auto;
 }
 
-/* ── Trade history table ── */
+/* Trade history table */
 
 .account-empty {
   color: var(--muted);
@@ -541,7 +541,7 @@
 .account-table .positive  { color: var(--mint); font-weight: 700; }
 .account-table .negative  { color: var(--danger); font-weight: 700; }
 
-/* ── Responsive ── */
+/* Responsive */
 
 @media (max-width: 640px) {
   .account-page {

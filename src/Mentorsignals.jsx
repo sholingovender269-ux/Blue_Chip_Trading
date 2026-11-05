@@ -6,7 +6,6 @@ import "./Mentorsignals.css";
 const SESSIONS = ["Asian", "London", "New York"];
 const TYPES = ["Market", "Limit", "Stop"];
 
-// Same pairs and timeframes as the homepage chart. "key" is what gets saved with the signal.
 const PAIRS = [
     { key: "EURUSD", label: "EUR/USD", symbol: "FX:EURUSD" },
     { key: "GBPUSD", label: "GBP/USD", symbol: "FX:GBPUSD" },
@@ -39,7 +38,6 @@ const emptyForm = () => ({
     rationale: "",
 });
 
-// TradingView Advanced Chart. Pair switching is done with the tabs above it.
 function TradingViewChart({ symbol = PAIRS[0].symbol, interval = "15", height = 520 }) {
     const containerRef = useRef(null);
 
@@ -91,7 +89,6 @@ function TradingViewChart({ symbol = PAIRS[0].symbol, interval = "15", height = 
 
 function MentorSignals({ onNavigate, user }) {
 
-    // Mentor signals live in their own table, separate from the AI "signals" table.
     const mentorName =
         `${user?.first_name || user?.firstName || ""} ${user?.last_name || user?.lastName || ""}`.trim() ||
         user?.name ||
@@ -105,9 +102,6 @@ function MentorSignals({ onNavigate, user }) {
     const [form, setForm] = useState(emptyForm());
     const [interval, setInterval] = useState("15");
 
-    // =========================
-    // LOAD + LIVE UPDATES
-    // =========================
 
     useEffect(() => {
         fetchSignals();
@@ -127,7 +121,6 @@ function MentorSignals({ onNavigate, user }) {
     }, []);
 
     const fetchSignals = async () => {
-        // Each mentor sees their own signals (everyone's if no mentor id is available)
         let query = supabase.from("mentor_signals").select("*");
         if (user?.id) query = query.eq("mentor_id", user.id);
 
@@ -144,11 +137,7 @@ function MentorSignals({ onNavigate, user }) {
         setLoading(false);
     };
 
-    // =========================
-    // POST SIGNAL
-    // =========================
 
-    // Chart tabs and the Pair dropdown stay in sync
     const pickPair = (key) => setForm((f) => ({ ...f, pair: key }));
     const chartSymbol = (PAIRS.find((p) => p.key === form.pair) || PAIRS[0]).symbol;
 
@@ -210,9 +199,6 @@ function MentorSignals({ onNavigate, user }) {
         }
     };
 
-    // =========================
-    // DELETE SIGNAL
-    // =========================
 
     const deleteSignal = async (id) => {
         if (!window.confirm("Delete this signal?")) return;
@@ -223,11 +209,7 @@ function MentorSignals({ onNavigate, user }) {
         else setSignals(signals.filter((s) => s.id !== id));
     };
 
-    // =========================
-    // HELPERS
-    // =========================
 
-    // Works with numeric (75) or text (low / medium / high) confidence
     const confidenceInfo = (value) => {
         const n = Number(value);
         if (value !== null && value !== "" && !isNaN(n)) {
@@ -238,7 +220,6 @@ function MentorSignals({ onNavigate, user }) {
         return { label: text || "—", pct: levels[text] || 0 };
     };
 
-    // "Asia" and "Asian" should both match the Asian tab
     const sameSession = (a, b) =>
         String(a).toLowerCase().slice(0, 4) ===
         String(b).toLowerCase().slice(0, 4);
@@ -253,9 +234,6 @@ function MentorSignals({ onNavigate, user }) {
         return risk ? (reward / risk).toFixed(2) : "—";
     };
 
-    // =========================
-    // RENDER
-    // =========================
 
     return (
         <div className="mentor-page">
@@ -277,7 +255,7 @@ function MentorSignals({ onNavigate, user }) {
 
                 {error && <div className="error-message">{error}</div>}
 
-                {/* CHART */}
+                {}
 
                 <div className="students-card">
                     <div className="card-header">
@@ -315,7 +293,7 @@ function MentorSignals({ onNavigate, user }) {
                     <TradingViewChart symbol={chartSymbol} interval={interval} />
                 </div>
 
-                {/* POST FORM */}
+                {}
 
                 <form className="students-card signal-form" onSubmit={postSignal}>
 
@@ -450,7 +428,7 @@ function MentorSignals({ onNavigate, user }) {
                     </button>
                 </form>
 
-                {/* SIGNAL LIST */}
+                {}
 
                 <div className="students-card">
 

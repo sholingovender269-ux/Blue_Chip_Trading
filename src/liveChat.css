@@ -1,4 +1,4 @@
-/* ---------- Layout: stream + chat side by side ---------- */
+
 .live-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -17,7 +17,7 @@
   max-width: 1240px;
 }
 
-/* ---------- Chat panel ---------- */
+
 .live-chat {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -233,7 +233,7 @@
   text-align: center;
 }
 
-/* ---------- Mobile ---------- */
+
 @media (max-width: 960px) {
   .live-layout {
     grid-template-columns: 1fr;
@@ -245,7 +245,7 @@
     opacity: 1;
   }
 }
-/* ---------- Blocked viewer + pulsing flag button ---------- */
+
 .chat-banned {
   padding: 14px 16px 18px;
   border-top: 1px solid var(--border);
@@ -262,7 +262,7 @@
   border-color: rgba(255, 77, 106, 0.3);
 }
 
-/* ---------- Mentor side ---------- */
+
 .live-chat.is-mentor .chat-actions {
   opacity: 1;
 }

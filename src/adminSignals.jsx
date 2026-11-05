@@ -8,7 +8,6 @@ const dangerBtn = {
   border: "1px solid rgba(255, 90, 90, 0.45)",
 };
 
-// CSV cells starting with = + - @ can run as formulas in Excel, so prefix them with '
 const csvCell = (v) => {
   let s = v == null ? "" : String(v);
   if (/^[=+\-@]/.test(s)) s = "'" + s;
@@ -50,7 +49,6 @@ export default function SignalsAdminPage() {
     setTimeout(() => setNotice(null), 4000);
   };
 
-  // ── Delete one signal ──
   const deleteOne = async (s) => {
     setBusy(true);
     setError(null);
@@ -67,7 +65,6 @@ export default function SignalsAdminPage() {
     showNotice("Signal deleted.");
   };
 
-  // ── Delete ALL signals (every row in the table) ──
   const deleteAll = async () => {
     setBusy(true);
     setError(null);
@@ -88,7 +85,6 @@ export default function SignalsAdminPage() {
     showNotice(`${data.length} signals deleted.`);
   };
 
-  // ── Export the shown signals to CSV ──
   const exportCsv = () => {
     const header = ["Date", "Session", "Pair", "Direction", "Entry", "Stop Loss", "Take Profit", "Confidence"];
     const rows = signals.map((s) => [

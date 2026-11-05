@@ -16,12 +16,12 @@ const DOWNLOADS = [
   { icon: "📓", name: "The ICT Bible", file: "The ICT Bible - V1 - By Ali Khan.pdf" },
 ];
 
-/* ------------------------------------------------------------------ */
-/*  Lesson HTML cleaner                                                */
-/*  Mentor-posted lessons can contain <style>/<script> blocks or       */
-/*  inline handlers that restyle the whole page or cover the button.   */
-/*  This strips them so lesson content can't affect the layout.        */
-/* ------------------------------------------------------------------ */
+
+
+
+
+
+
 function cleanLessonHtml(html = "") {
   const doc = new DOMParser().parseFromString(html || "", "text/html");
   doc.querySelectorAll("script, style, link, meta, base, object, embed").forEach((n) => n.remove());
@@ -33,9 +33,9 @@ function cleanLessonHtml(html = "") {
   return doc.body.innerHTML;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Data hook: courses, lessons, and the logged-in user's progress     */
-/* ------------------------------------------------------------------ */
+
+
+
 function useCourseData() {
   const [courses, setCourses] = useState([]);
   const [lessons, setLessons] = useState([]);
@@ -82,7 +82,6 @@ function useCourseData() {
       if (!userId) return;
       const isDone = done.has(lesson.id);
 
-      // optimistic update
       setDone((prev) => {
         const next = new Set(prev);
         isDone ? next.delete(lesson.id) : next.add(lesson.id);
@@ -102,7 +101,6 @@ function useCourseData() {
           });
 
       if (e) {
-        // rollback
         setDone((prev) => {
           const next = new Set(prev);
           isDone ? next.add(lesson.id) : next.delete(lesson.id);
@@ -116,9 +114,9 @@ function useCourseData() {
   return { courses, lessons, done, userId, loading, error, toggleLesson };
 }
 
-/* ------------------------------------------------------------------ */
-/*  Small components                                                   */
-/* ------------------------------------------------------------------ */
+
+
+
 function ProgressBar({ completed, total }) {
   const pct = total ? Math.round((completed / total) * 100) : 0;
   return (
@@ -162,9 +160,9 @@ function CourseCard({ course, total, completed, minutes, onOpen }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Course viewer (works for every course, incl. the flagship)         */
-/* ------------------------------------------------------------------ */
+
+
+
 function CourseViewer({ course, lessons, done, userId, onToggle, onBack }) {
   const [activeId, setActiveId] = useState(lessons[0]?.id);
   const sectionRefs = useRef({});
@@ -254,7 +252,7 @@ function CourseViewer({ course, lessons, done, userId, onToggle, onBack }) {
                 </div>
               </div>
 
-              {/* content is cleaned first so mentor HTML can't break the layout */}
+              {}
               <div
                 className="bc-lesson-content"
                 dangerouslySetInnerHTML={{ __html: cleanLessonHtml(l.content_html) }}
@@ -279,9 +277,9 @@ function CourseViewer({ course, lessons, done, userId, onToggle, onBack }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Main page                                                          */
-/* ------------------------------------------------------------------ */
+
+
+
 export default function Courses() {
   const { courses, lessons, done, userId, loading, error, toggleLesson } = useCourseData();
   const [openSlug, setOpenSlug] = useState(null);

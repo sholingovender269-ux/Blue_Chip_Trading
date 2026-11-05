@@ -13,13 +13,11 @@ function getDisplayName(authUser) {
     }
     if (s?.name) return String(s.name).slice(0, 30);
   } catch {
-    /* ignore */
+    
   }
   return authUser?.email?.split('@')[0]?.slice(0, 30) || 'Viewer';
 }
 
-// Mentors log in via the `mentors` table (no Supabase Auth session).
-// On the Go Live page (isMentorPage) the logged-in id is always the mentor's.
 function getMentorId(isMentorPage = false) {
   try {
     const s = JSON.parse(localStorage.getItem('bct_user') || 'null');
@@ -35,8 +33,6 @@ function getMentorName() {
   return name === 'Viewer' ? 'Mentor' : name;
 }
 
-// `isModerator` is kept as the prop name so GoLive.jsx doesn't need to change:
-// it simply means "this is the mentor's side".
 export default function LiveChat({ room = 'main-room', isModerator: isMentorSide = false }) {
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -54,12 +50,10 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
 
   const mentorId = isMentorSide ? getMentorId(true) : null;
 
-  // current user (viewers only)
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data?.user || null));
   }, []);
 
-  // this viewer's ban status + the messages they already reported
   useEffect(() => {
     if (!user || isMentorSide) return undefined;
     let active = true;
@@ -82,8 +76,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
         if (active && data) setReported(new Set(data.map((r) => r.message_id)));
       });
 
-    // When the mentor goes live again, bans are cleared and chat unlocks.
-    // (DELETE events can't be filtered, so we check the row ourselves.)
     const channel = supabase
       .channel(`live-chat-ban-${user.id}-${room}`)
       .on(
@@ -105,7 +97,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
       )
       .subscribe();
 
-    // Safety net in case the realtime event is missed: re-check every 10s
     const poll = setInterval(() => {
       supabase
         .from('live_chat_bans')
@@ -125,7 +116,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
     };
   }, [user, isMentorSide, room]);
 
-  // load history + subscribe to realtime
   useEffect(() => {
     let active = true;
 
@@ -168,7 +158,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
     };
   }, [room]);
 
-  // auto-scroll when near the bottom
   useEffect(() => {
     const el = listRef.current;
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
@@ -183,13 +172,11 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
   const addMessage = (row) =>
     setMessages((prev) => (prev.some((m) => m.id === row.id) ? prev : [...prev.slice(-199), row]));
 
-  // ── Send ────────────────────────────────────────────────────────────
   const send = async (e) => {
     e.preventDefault();
     const message = text.trim();
     if (!message || sending) return;
 
-    // Mentor: send / reply as the mentor
     if (isMentorSide) {
       if (!mentorId) return;
       setSending(true);
@@ -212,7 +199,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
       return;
     }
 
-    // Viewer
     if (!user || banned) return;
     setSending(true);
     setError('');
@@ -235,7 +221,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
     }
 
     if (result === 'blocked' || result === 'banned') {
-      // vulgar word: message not sent, viewer is blocked until the next go live
       setText('');
       setBanned(true);
       return;
@@ -245,13 +230,11 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
     stickToBottom.current = true;
   };
 
-  // Mentor replies to a message: prefill "@Name "
   const reply = (m) => {
     setText(`@${m.display_name} `);
     inputRef.current?.focus();
   };
 
-  // ── Viewer: report ──────────────────────────────────────────────────
   const report = async (id) => {
     setError('');
     const { error: err } = await supabase.rpc('report_chat_message', { p_message_id: id });
@@ -263,7 +246,6 @@ export default function LiveChat({ room = 'main-room', isModerator: isMentorSide
     setReported((prev) => new Set(prev).add(id));
   };
 
-  // ── Mentor: remove / dismiss / block ────────────────────────────────
   const remove = async (id) => {
     setError('');
     const { error: err } = mentorId

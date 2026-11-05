@@ -2,9 +2,6 @@ import { useState } from "react";
 import "./AdminLogin.css";
 import { supabase } from "./supabaseClient";
 
-// Standalone admin sign-in page. Same logic as the old "Admin" option on the
-// login page: Supabase Auth sign-in, then a lookup in the `admins` table.
-// Reached via the #admin URL (see the App.jsx snippet), not from any public button.
 
 function clearAdminHash() {
   try {
@@ -12,7 +9,6 @@ function clearAdminHash() {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   } catch {
-    // ignore
   }
 }
 
@@ -32,7 +28,6 @@ export default function AdminLogin({ onLogin, onBack, onGoToForgotPassword, onGo
     setLoading(true);
 
     try {
-      // Step 1 - sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -44,7 +39,6 @@ export default function AdminLogin({ onLogin, onBack, onGoToForgotPassword, onGo
         return;
       }
 
-      // Step 2 - look them up in the admins table
       const { data: adminData, error: adminError } = await supabase
         .from("admins")
         .select("*")

@@ -7,12 +7,6 @@ const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const FCS_API_KEY = "qPsf0edpNixeEn35uJSkXFwstbp7Gso1v";
 const FCS_API_URL = "https://api-v4.fcsapi.com/forex/latest";
 
-// Ordered fallback chain of free, vision-capable models on OpenRouter.
-// Verified live against openrouter.ai/models — Aug 2026 snapshot.
-// General-purpose multimodal chat models first (less likely to trip
-// safety refusals on "analyze this chart" prompts), reasoning/agentic
-// vision models later as a last resort. Model availability shifts
-// often on OpenRouter's free tier, so re-check this list periodically.
 const VISION_MODELS = [
   "google/gemma-4-31b-it:free",
   "minimax/minimax-m3:free",
@@ -21,7 +15,6 @@ const VISION_MODELS = [
   "thinkingmachines/inkling:free",
 ];
 
-// Text-only fallback chain (no image attached)
 const TEXT_MODELS = [
   "nvidia/nemotron-3-ultra-550b-a55b:free",
   "meta-llama/llama-3.3-70b-instruct:free",
@@ -30,9 +23,6 @@ const TEXT_MODELS = [
 
 const PRICE_KEYWORDS = /price|rate|quote|trading at|worth|xau|gold|xag|silver|eur\/?usd|gbp\/?usd|usd\/?jpy|aud\/?usd|usd\/?cad|nzd\/?usd|usd\/?chf/i;
 
-// Phrases that indicate the model refused instead of answering, so we
-// know to retry with the next model in the chain rather than showing
-// the refusal to the user.
 const REFUSAL_PATTERN =
   /unauthorized advice|cannot provide (financial|investment|trading)|not (able|licensed) to (provide|give).{0,20}(advice|recommendation)|i('m| am) not a (licensed )?financial advisor|can'?t (give|provide) (specific )?(trading|investment) advice|as an ai( language model)?,? i (cannot|can't|am unable)/i;
 
@@ -72,9 +62,6 @@ As of: ${a.tm} UTC`;
   }
 }
 
-// Framed as educational technical-analysis commentary rather than
-// direct trade instruction — reduces false-positive safety refusals
-// on stricter free models while keeping the same SMC/ICT depth.
 const SYSTEM_PROMPT = `You are an elite SMC (Smart Money Concepts) and ICT (Inner Circle Trader) trading educator providing educational technical analysis commentary. This is for learning purposes only, not financial advice, and the user understands all trading decisions are their own responsibility.
 
 When analyzing charts you must:
@@ -162,7 +149,6 @@ export default function AIAssistant({ user, activeSymbol }) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  // Calls OpenRouter with a single model, retrying once on 429.
   const callModel = async (model, baseBody, attempt = 1) => {
     const requestBody = { ...baseBody, model };
     const response = await fetch(API_URL, {
@@ -183,7 +169,6 @@ export default function AIAssistant({ user, activeSymbol }) {
     return { response, data };
   };
 
-  // Walks the model chain until one returns a usable (non-refusal) reply.
   const callWithFallback = async (baseBody, modelChain) => {
     let lastResult = null;
     for (const model of modelChain) {

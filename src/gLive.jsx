@@ -29,7 +29,6 @@ class VideoErrorBoundary extends Component {
 
 const LIVEKIT_URL = 'wss://blue-chip-trading-oz31f1yy.livekit.cloud';
 
-// Captures one frame from a <video> element and returns it as a Base64 JPEG string
 function captureFrame(videoEl) {
   const canvas = document.createElement('canvas');
   canvas.width = videoEl.videoWidth;
@@ -53,8 +52,6 @@ function BroadcastView({ onEnd }) {
   const captured = useRef(false);
   const [shareError, setShareError] = useState('');
 
-  // Each stream has its own chat room, named after this stream's session id.
-  // Viewers get the same id from the broadcaster participant, so both sides match.
   const streamId =
     connectionState === ConnectionState.Connected ? room?.localParticipant?.sid : '';
 
@@ -150,7 +147,7 @@ function BroadcastView({ onEnd }) {
         {shareError && <div className="live-error live-error-inline">{shareError}</div>}
       </div>
 
-      {/* Reported messages show here; the mentor can reply, remove and block */}
+      {}
       {streamId ? (
         <LiveChat key={streamId} room={`main-room-${streamId}`} isModerator />
       ) : (
@@ -164,7 +161,6 @@ function BroadcastView({ onEnd }) {
   );
 }
 
-// `mentor` = the logged-in mentor object from your own login (needs `.id` from the mentors table)
 export default function GoLive({ mentor }) {
   const [token, setToken] = useState('');
   const [connected, setConnected] = useState(false);
@@ -213,7 +209,7 @@ export default function GoLive({ mentor }) {
             </button>
           </div>
 
-          {/* Mentors schedule (and delete) upcoming lives here */}
+          {}
           <ScheduleLive mentor={mentor} />
         </div>
       </div>

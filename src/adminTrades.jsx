@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./adminTrades.css";
 import { supabase } from "./supabaseClient";
 
-// ── Helpers ─────────────────────────────────────────────────────
 
 function formatDateTime(iso) {
   if (!iso) return "—";
@@ -40,7 +39,6 @@ const SORT_OPTIONS = [
   { value: "lot_size_asc", label: "Lot Size (Low → High)" },
 ];
 
-// ── Main page ───────────────────────────────────────────────────
 
 export default function AdminTradesPage() {
   const [positions, setPositions] = useState([]);

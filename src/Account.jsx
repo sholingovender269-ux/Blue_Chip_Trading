@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./Account.css";
-import { supabase } from "./supabaseClient"; // adjust path if different
+import { supabase } from "./supabaseClient"; 
 import { fetchClosedPositions, getOrCreateDemoAccount } from "./demoTradingApi";
 
-// How long the person has to change their mind (must match the SQL function).
 const DELETION_DELAY_MS = 5 * 60 * 1000;
 
 function formatMoney(n) {
@@ -26,11 +25,10 @@ function formatCountdown(ms) {
 }
 
 // onAccountDeleted: called after the account is deleted and the user is signed out
-// (use it to send them back to the login / landing page).
 export default function Account({ user, onUserUpdate, onAccountDeleted }) {
   const [activeTab, setActiveTab] = useState("profile");
 
-  // ── Profile (name, bio, avatar) ──
+  // Profile
   const [firstName, setFirstName] = useState(user?.first_name || user?.name?.split(" ")[0] || "");
   const [lastName, setLastName] = useState(
     user?.last_name || user?.name?.split(" ").slice(1).join(" ") || ""
@@ -41,19 +39,19 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState(null);
 
-  // ── Password ──
+  // Password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState(null);
 
-  // ── Delete account (with 5 minute countdown) ──
+  // Delete account
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [scheduling, setScheduling] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
-  // deadline = client timestamp (ms) when the deletion will run, or null if none scheduled
+  // deadline
   const [deadline, setDeadline] = useState(null);
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
@@ -61,17 +59,50 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
   const [countdownError, setCountdownError] = useState(null);
   const finalizeStarted = useRef(false);
 
-  // ── Trade history ──
+  //  Trade history 
   const [closedPositions, setClosedPositions] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(null);
 
   useEffect(() => {
-    setFirstName(user?.first_name || user?.name?.split(" ")[0] || "");
-    setLastName(user?.last_name || user?.name?.split(" ").slice(1).join(" ") || "");
-    setBio(user?.bio || "");
-    setAvatarUrl(user?.profile_picture_url || "");
-  }, [user?.first_name, user?.last_name, user?.name, user?.bio, user?.profile_picture_url]);
+  setFirstName(user?.first_name || user?.name?.split(" ")[0] || "");
+  setLastName(user?.last_name || user?.name?.split(" ").slice(1).join(" ") || "");
+  setBio(user?.bio || "");
+}, [user?.first_name, user?.last_name, user?.name, user?.bio]);
+
+// Load the profile picture directly from the clients table.
+useEffect(() => {
+  let cancelled = false;
+
+  const loadProfilePicture = async () => {
+    if (!user?.email) {
+      setAvatarUrl("");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("profile_picture_url")
+        .eq("email", user.email)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!cancelled) {
+        setAvatarUrl(data?.profile_picture_url || "");
+      }
+    } catch (err) {
+      console.error("Profile picture loading failed:", err);
+    }
+  };
+
+  loadProfilePicture();
+
+  return () => {
+    cancelled = true;
+  };
+}, [user?.email]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,8 +130,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
     };
   }, []);
 
-  // On load, check whether a deletion is already scheduled (survives refresh / re-login).
-  // The server returns seconds remaining, so a wrong device clock can't skew the timer.
+
   useEffect(() => {
     let cancelled = false;
     const loadDeletionStatus = async () => {
@@ -135,10 +165,10 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
     if (deadline && remainingMs === 0 && !finalizeStarted.current) {
       finalizeDeletion();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [deadline, remainingMs]);
 
-  // Close the delete modal with the Escape key
+  
   useEffect(() => {
     if (!showDeleteModal) return;
     const onKey = (e) => {
@@ -162,8 +192,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
     setProfileMessage(null);
     try {
       const ext = (file.name.split(".").pop() || "png").toLowerCase();
-      // The storage path is keyed by email. Your storage policy must match
-      // this folder name against the signed-in user's email (see the SQL).
+      
       const safeKey = user.email.toLowerCase();
       const path = `${safeKey}/avatar.${ext}`;
 
@@ -173,10 +202,10 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
       if (uploadError) throw uploadError;
 
       const { data: publicUrlData } = supabase.storage.from("avatars").getPublicUrl(path);
-      const newUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`; // cache-bust
+      const newUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`; 
 
       // clients.id is its own generated UUID, NOT the auth user id, so we
-      // match on email (unique in the clients table) instead of id.
+      // match on email  instead of id.
       const { data: updatedRows, error: dbError } = await supabase
         .from("clients")
         .update({ profile_picture_url: newUrl })
@@ -222,7 +251,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
         throw new Error("No matching client row found for this email — nothing was saved.");
       }
 
-      // Keep auth metadata's display name in sync too, if used elsewhere.
+      
       const { error: authError } = await supabase.auth.updateUser({
         data: { name: fullName },
       });
@@ -263,9 +292,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
 
     setSavingPassword(true);
     try {
-      // Re-authenticate with the current password first, so a person who
-      // walks away from an unlocked session can't change the password
-      // without knowing it.
+      // Re-authenticate with the current password first
       const { data: userData } = await supabase.auth.getUser();
       const email = userData?.user?.email;
       if (!email) throw new Error("Not signed in");
@@ -348,7 +375,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
     }
   };
 
-  // Cancel during the countdown: the account is kept.
+  // Cancel during the countdown
   const handleCancelDeletion = async () => {
     if (cancelling || finalizing) return;
     setCancelling(true);
@@ -365,7 +392,7 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
     }
   };
 
-  // Step 2: countdown reached zero, delete for real.
+  // Step 2: countdown reached zero
   const finalizeDeletion = async () => {
     finalizeStarted.current = true;
     setFinalizing(true);
@@ -521,11 +548,6 @@ export default function Account({ user, onUserUpdate, onAccountDeleted }) {
               <label>Email</label>
               <input type="email" value={user?.email || ""} disabled />
               <span className="account-field-hint">Email can't be changed here.</span>
-            </div>
-
-            <div className="account-field">
-              <label>ID Number</label>
-              <input type="text" value={user?.idNumber || ""} disabled />
             </div>
 
             <div className="account-field">
